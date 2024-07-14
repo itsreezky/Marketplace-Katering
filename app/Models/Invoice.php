@@ -11,8 +11,11 @@ class Invoice extends Model
 
     protected $fillable = [
         'order_id',
-        'customer_id',
-        'merchant_id',
-        'total',
+        'total_price',
     ];
+
+    public function order()
+    {
+        return $this->belongsTo(Order::class);
+    }
 }

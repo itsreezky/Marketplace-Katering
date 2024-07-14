@@ -13,13 +13,11 @@ class Customer extends Model
         'user_id', 'company_name', 'address', 'contact'
     ];
 
-    // Relasi ke model User
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    // Relasi ke model Order
     public function orders()
     {
         return $this->hasMany(Order::class);

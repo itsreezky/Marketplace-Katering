@@ -6,16 +6,16 @@
 // Github: https://github.com/itsreezky
 // LinkedIn: https://www.linkedin.com/in/itsreezky/
 // ========================================
-// File: MerchantsLogin.jsx
-// Path: resources/js/Auth/Merchants/Login.jsx
+// File: Login.jsx
+// Path: resources/js/Auth/Customers/Login.jsx
 // Created Date: 13/07/2024 17:31:59
 // ========================================
 
 import React from "react";
-import LoginForm from "./Components/LoginForm";
+import LoginForm from "../Components/LoginForm";
 
-function MerchantsLogin() {
-    return <LoginForm userType="merchant" />;
+function CustomersLogin() {
+    return <LoginForm userType="customer" />;
 }
 
-export default MerchantsLogin;
+export default CustomersLogin;

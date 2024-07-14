@@ -1,60 +1,62 @@
 import React, { useState } from "react";
-import Swal from "sweetalert2";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import Swal from "sweetalert2";
+import { useUser } from "../../Controllers/UserContext";
 
-function RegisterForm({ userType }) {
-    const [loading, setLoading] = useState(false);
+const RegisterForm = ({ userType }) => {
+    const { setUser } = useUser();
     const navigate = useNavigate();
+    const [formData, setFormData] = useState({
+        name: "",
+        email: "",
+        password: "",
+    });
+    const [errors, setErrors] = useState({});
+    const [loading, setLoading] = useState(false);
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prevFormData) => ({
+            ...prevFormData,
+            [name]: value,
+        }));
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
-
-        const formData = new FormData(e.target);
-        const data = {
-            name: formData.get("name"),
-            email: formData.get("email"),
-            password: formData.get("password"),
-            contact: formData.get("contact"),
-            address: formData.get("address"),
-            type: userType,
-        };
-
         try {
             const response = await axios.post(
-                "http://localhost:8000/api/register",
-                data
+                `${import.meta.env.VITE_API_BASE_URL}/register`,
+                { ...formData, role: userType }
             );
-
-            if (response.status === 201) {
-                Swal.fire({
-                    icon: "success",
-                    title: "Pendaftaran Berhasil",
-                    text: "Akun Anda telah terdaftar! Selamat Datang.",
-                    toast: true,
-                    position: "top-end",
-                    showConfirmButton: false,
-                    timer: 3000,
-                });
-                setTimeout(() => {
-                    navigate(`/${userType}s/login`);
-                }, 3000);
-            } else {
-                throw new Error(response.data.message || "Pendaftaran gagal");
-            }
-        } catch (error) {
-            Swal.fire({
-                icon: "error",
-                title: "Pendaftaran Gagal",
-                text: "Terjadi kesalahan saat mendaftar. Silakan coba lagi.",
-                toast: true,
-                position: "top-end",
-                showConfirmButton: false,
-                timer: 3000,
-            });
-        } finally {
             setLoading(false);
+            localStorage.setItem("user", JSON.stringify(response.data.user));
+            localStorage.setItem("token", response.data.token);
+            setUser(response.data.user);
+            Swal.fire("Success", "Account created successfully!", "success");
+            navigate(
+                userType === "customer"
+                    ? "/customers/profile"
+                    : "/merchants/profile"
+            );
+        } catch (error) {
+            setLoading(false);
+            if (error.response && error.response.status === 422) {
+                setErrors(error.response.data.errors);
+                Swal.fire(
+                    "Error",
+                    "Validation failed. Check your input.",
+                    "error"
+                );
+            } else {
+                Swal.fire(
+                    "Error",
+                    "An unexpected error occurred. Try again!",
+                    "error"
+                );
+            }
         }
     };
 
@@ -73,10 +75,11 @@ function RegisterForm({ userType }) {
                                     />
                                 </center>
                                 <div className="text-center mb-4">
-                                    <p className="mb-0">
-                                        Silahkan mengisi form pendaftaran untuk
-                                        melanjutkan.
-                                    </p>
+                                    <h4>
+                                        Register{" "}
+                                        {userType.charAt(0).toUpperCase() +
+                                            userType.slice(1)}
+                                    </h4>
                                 </div>
                                 <div className="form-body">
                                     <form
@@ -88,15 +91,22 @@ function RegisterForm({ userType }) {
                                                 htmlFor="inputName"
                                                 className="form-label"
                                             >
-                                                Nama
+                                                Name
                                             </label>
                                             <input
                                                 type="text"
                                                 className="form-control"
                                                 id="inputName"
                                                 name="name"
+                                                value={formData.name}
+                                                onChange={handleChange}
                                                 required
                                             />
+                                            {errors.name && (
+                                                <div className="text-danger">
+                                                    {errors.name[0]}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="col-12">
                                             <label
@@ -110,9 +120,15 @@ function RegisterForm({ userType }) {
                                                 className="form-control"
                                                 id="inputEmailAddress"
                                                 name="email"
-                                                placeholder="jhon@example.com"
+                                                value={formData.email}
+                                                onChange={handleChange}
                                                 required
                                             />
+                                            {errors.email && (
+                                                <div className="text-danger">
+                                                    {errors.email[0]}
+                                                </div>
+                                            )}
                                         </div>
                                         <div className="col-12">
                                             <label
@@ -127,46 +143,19 @@ function RegisterForm({ userType }) {
                                             >
                                                 <input
                                                     type="password"
-                                                    className="form-control border-end-0"
+                                                    className="form-control"
                                                     id="inputChoosePassword"
                                                     name="password"
-                                                    placeholder="Enter Password"
+                                                    value={formData.password}
+                                                    onChange={handleChange}
                                                     required
                                                 />
-                                                <button
-                                                    type="button"
-                                                    className="input-group-text"
-                                                >
-                                                    <i className="bx bx-hide" />
-                                                </button>
+                                                {errors.password && (
+                                                    <div className="text-danger">
+                                                        {errors.password[0]}
+                                                    </div>
+                                                )}
                                             </div>
-                                        </div>
-                                        <div className="col-12">
-                                            <label
-                                                htmlFor="inputContact"
-                                                className="form-label"
-                                            >
-                                                Kontak
-                                            </label>
-                                            <input
-                                                type="text"
-                                                className="form-control"
-                                                id="inputContact"
-                                                name="contact"
-                                            />
-                                        </div>
-                                        <div className="col-12">
-                                            <label
-                                                htmlFor="inputAddress"
-                                                className="form-label"
-                                            >
-                                                Alamat
-                                            </label>
-                                            <textarea
-                                                className="form-control"
-                                                id="inputAddress"
-                                                name="address"
-                                            />
                                         </div>
                                         <div className="col-12">
                                             <div className="d-grid">
@@ -177,19 +166,19 @@ function RegisterForm({ userType }) {
                                                 >
                                                     {loading
                                                         ? "Loading..."
-                                                        : "Daftar"}
+                                                        : "Register"}
                                                 </button>
                                             </div>
                                         </div>
                                         <div className="col-12">
                                             <div className="text-center">
                                                 <p className="mb-0">
-                                                    Sudah punya akun?{" "}
-                                                    <a
-                                                        href={`/${userType}s/login`}
+                                                    Already have an account?{" "}
+                                                    <Link
+                                                        to={`/${userType}s/login`}
                                                     >
-                                                        Masuk disini.
-                                                    </a>
+                                                        Login here.
+                                                    </Link>
                                                 </p>
                                             </div>
                                         </div>
@@ -202,6 +191,6 @@ function RegisterForm({ userType }) {
             </div>
         </div>
     );
-}
+};
 
 export default RegisterForm;

@@ -3,40 +3,53 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use App\Models\Merchant;
+use App\Models\Menu;
+use App\Models\Order;
+use Illuminate\Support\Facades\Auth;
 
 class MerchantController extends Controller
 {
-    // Fungsi untuk memperbarui profil merchant
     public function updateProfile(Request $request)
     {
-        $merchant = Auth::user()->merchant;
+        $merchant = Merchant::where('user_id', Auth::id())->firstOrFail();
+        $merchant->update($request->all());
 
-        // Validasi data input
-        $validatedData = $request->validate([
-            'company_name' => 'required|string|max:255',
-            'address' => 'required|string|max:255',
-            'contact' => 'required|string|max:255',
-            'description' => 'nullable|string'
-        ]);
-
-        // Memperbarui profil merchant
-        $merchant->update($validatedData);
-
-        // Mengembalikan respons sukses
-        return response()->json([
-            'message' => 'Profil merchant berhasil diperbarui',
-            'merchant' => $merchant
-        ], 200);
+        return response()->json(['message' => 'Profile updated successfully', 'merchant' => $merchant], 200);
     }
 
-    // Fungsi untuk mendapatkan semua order untuk merchant yang sedang login
-    public function getOrders()
+    public function addMenu(Request $request)
     {
-        $merchant = Auth::user()->merchant;
-        $orders = $merchant->orders;
+        $merchant = Merchant::where('user_id', Auth::id())->firstOrFail();
 
-        return response()->json($orders, 200);
+        $menu = $merchant->menus()->create($request->all());
+
+        return response()->json(['message' => 'Menu added successfully', 'menu' => $menu], 201);
+    }
+
+    public function updateMenu(Request $request, $id)
+    {
+        $menu = Menu::findOrFail($id);
+        $menu->update($request->all());
+
+        return response()->json(['message' => 'Menu updated successfully', 'menu' => $menu], 200);
+    }
+
+    public function deleteMenu($id)
+    {
+        $menu = Menu::findOrFail($id);
+        $menu->delete();
+
+        return response()->json(['message' => 'Menu deleted successfully'], 200);
+    }
+
+    public function listOrders()
+    {
+        $merchant = Merchant::where('user_id', Auth::id())->firstOrFail();
+        $orders = Order::whereHas('menu', function($query) use ($merchant) {
+            $query->where('merchant_id', $merchant->id);
+        })->get();
+
+        return response()->json(['orders' => $orders], 200);
     }
 }

@@ -10,12 +10,14 @@ class CreateMenusTable extends Migration
     {
         Schema::create('menus', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('merchant_id')->constrained()->onDelete('cascade');
+            $table->unsignedBigInteger('merchant_id');
             $table->string('name');
             $table->text('description');
             $table->string('photo');
             $table->decimal('price', 8, 2);
             $table->timestamps();
+
+            $table->foreign('merchant_id')->references('id')->on('merchants')->onDelete('cascade');
         });
     }
 

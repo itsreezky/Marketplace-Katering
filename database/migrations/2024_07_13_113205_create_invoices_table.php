@@ -6,28 +6,18 @@ use Illuminate\Support\Facades\Schema;
 
 class CreateInvoicesTable extends Migration
 {
-    /**
-     * Run the migrations.
-     *
-     * @return void
-     */
     public function up()
     {
         Schema::create('invoices', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('order_id')->constrained()->onDelete('cascade');
-            $table->foreignId('customer_id')->constrained()->onDelete('cascade');
-            $table->foreignId('merchant_id')->constrained()->onDelete('cascade');
-            $table->decimal('total', 10, 2);
+            $table->unsignedBigInteger('order_id');
+            $table->decimal('total_price', 8, 2);
             $table->timestamps();
+
+            $table->foreign('order_id')->references('id')->on('orders')->onDelete('cascade');
         });
     }
 
-    /**
-     * Reverse the migrations.
-     *
-     * @return void
-     */
     public function down()
     {
         Schema::dropIfExists('invoices');

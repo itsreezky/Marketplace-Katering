@@ -1,110 +1,128 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { useUser } from "../../Controllers/UserContext";
 import axios from "axios";
-import DataTable from "react-data-table-component";
+import Swal from "sweetalert2";
 
 function CustomersProfile() {
-    const [customer, setCustomer] = useState({});
-    const [invoices, setInvoices] = useState([]);
+    const { user, setUser } = useUser();
     const [formData, setFormData] = useState({
         name: "",
         email: "",
+        company: "",
         contact: "",
         address: "",
     });
+    const [loading, setLoading] = useState(false);
+    const [profile, setProfile] = useState(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
-        const token = localStorage.getItem("authToken");
-
-        const fetchCustomerData = async () => {
-            try {
-                const response = await axios.get(
-                    "http://localhost:8000/api/customer/profile",
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
-                setCustomer(response.data);
-                console.log(response.data);
-                setFormData({
-                    name: response.data.name,
-                    email: response.data.email,
-                    contact: response.data.contact,
-                    address: response.data.address,
-                });
-            } catch (error) {
-                console.log(error);
-            }
-        };
-
-        if (token) {
-            fetchCustomerData();
+        if (user) {
+            setFormData({
+                name: user.name,
+                email: user.email,
+            });
+            fetchProfile();
+        } else {
+            navigate("/");
         }
-    }, []);
-    const token = localStorage.getItem("authToken");
+    }, [user, navigate]);
 
-    useEffect(() => {
-        const fetchInvoices = async () => {
-            try {
-                const response = await axios.get(
-                    "http://localhost:8000/api/customer/invoices",
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
-                setInvoices(response.data);
-            } catch (error) {
-                console.log(error.message);
+    const fetchProfile = async () => {
+        try {
+            const token = localStorage.getItem("token");
+            const response = await axios.get(
+                `${import.meta.env.VITE_API_BASE_URL}/user/profile`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+            setProfile(response.data.profile);
+            if (response.data.profile) {
+                setFormData((prevData) => ({
+                    ...prevData,
+                    company: response.data.profile.company_name || "",
+                    contact: response.data.profile.contact || "",
+                    address: response.data.profile.address || "",
+                }));
             }
-        };
-
-        if (token) {
-            fetchInvoices();
+        } catch (error) {
+            Swal.fire({
+                icon: "error",
+                title: "Gagal",
+                text: "Gagal mengambil data profil",
+                toast: true,
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 3000,
+            });
         }
-    }, [customer]);
+    };
 
     const handleChange = (e) => {
         const { name, value } = e.target;
-        setFormData({
-            ...formData,
+        setFormData((prevData) => ({
+            ...prevData,
             [name]: value,
-        });
+        }));
     };
 
-    const handleSave = () => {
-        const token = localStorage.getItem("token");
+    const handleSave = async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem("token");
+            const response = await axios.put(
+                `${import.meta.env.VITE_API_BASE_URL}/customer/profile`,
+                formData,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
 
-        axios
-            .put("http://localhost:8000/api/customers/profile", formData, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            })
-            .then((response) => {
-                alert("Profil berhasil diperbarui!");
-                setCustomer(response.data);
-            })
-            .catch((error) => console.log(error));
+            if (response.status === 200) {
+                const updatedUser = {
+                    ...user,
+                    customer: response.data.customer,
+                };
+                setUser(updatedUser);
+                localStorage.setItem("user", JSON.stringify(updatedUser));
+                Swal.fire({
+                    icon: "success",
+                    title: "Berhasil",
+                    text: "Data profil berhasil diperbarui",
+                    toast: true,
+                    position: "top-end",
+                    showConfirmButton: false,
+                    timer: 3000,
+                });
+            } else {
+                throw new Error(
+                    response.data.message || "Gagal memperbarui data profil"
+                );
+            }
+        } catch (error) {
+            Swal.fire({
+                icon: "error",
+                title: "Gagal",
+                text: error.message,
+                toast: true,
+                position: "top-end",
+                showConfirmButton: false,
+                timer: 3000,
+            });
+        } finally {
+            setLoading(false);
+        }
     };
 
-    const columns = [
-        { name: "ID", selector: (row) => row.id, sortable: true },
-        { name: "Order ID", selector: (row) => row.order_id, sortable: true },
-        {
-            name: "Merchant ID",
-            selector: (row) => row.merchant_id,
-            sortable: true,
-        },
-        { name: "Total", selector: (row) => row.total, sortable: true },
-        {
-            name: "Created At",
-            selector: (row) => row.created_at,
-            sortable: true,
-        },
-    ];
+    if (!user) {
+        return null;
+    }
 
     return (
         <div className="container my-5">
@@ -116,16 +134,18 @@ function CustomersProfile() {
                                 <img
                                     src="https://resource.reezky.cloud/reezky/itsreezky-icon.png"
                                     alt="Admin"
-                                    className="rounded-circle p-1 bg-primary"
-                                    width={110}
+                                    className="rounded-circle p-1"
+                                    width={100}
                                 />
                                 <div className="mt-3">
-                                    <h4>{customer.name}</h4>
+                                    <h4>{user.name}</h4>
                                     <p className="text-secondary mb-1">
-                                        Customer
+                                        {user.role === "customer"
+                                            ? "Customer"
+                                            : "Merchant"}
                                     </p>
                                     <p className="text-muted font-size-sm">
-                                        {customer.address}
+                                        {formData.address}
                                     </p>
                                 </div>
                             </div>
@@ -155,11 +175,26 @@ function CustomersProfile() {
                                 </div>
                                 <div className="col-sm-9 text-secondary">
                                     <input
-                                        type="text"
+                                        type="email"
                                         className="form-control"
                                         name="email"
                                         value={formData.email}
                                         onChange={handleChange}
+                                    />
+                                </div>
+                            </div>
+                            <div className="row mb-3">
+                                <div className="col-sm-3">
+                                    <h6 className="mb-0">Perusahaan</h6>
+                                </div>
+                                <div className="col-sm-9 text-secondary">
+                                    <input
+                                        type="text"
+                                        className="form-control"
+                                        name="company"
+                                        value={formData.company}
+                                        onChange={handleChange}
+                                        disabled={user.role !== "customer"}
                                     />
                                 </div>
                             </div>
@@ -174,6 +209,7 @@ function CustomersProfile() {
                                         name="contact"
                                         value={formData.contact}
                                         onChange={handleChange}
+                                        disabled={user.role !== "customer"}
                                     />
                                 </div>
                             </div>
@@ -192,25 +228,15 @@ function CustomersProfile() {
                                 </div>
                             </div>
                             <div className="row">
-                                <div className="col-sm-3" />
+                                <div className="col-sm-3"></div>
                                 <div className="col-sm-9 text-secondary">
                                     <button
                                         className="btn btn-primary px-4"
                                         onClick={handleSave}
+                                        disabled={loading}
                                     >
-                                        Simpan Perubahan
+                                        {loading ? "Saving..." : "Simpan"}
                                     </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div className="row">
-                        <div className="col-sm-12">
-                            <div className="card">
-                                <div className="card-body">
-                                    <h5 className="d-flex align-items-center mb-3">
-                                        Faktur
-                                    </h5>
                                 </div>
                             </div>
                         </div>

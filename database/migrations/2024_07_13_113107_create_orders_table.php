@@ -10,13 +10,14 @@ class CreateOrdersTable extends Migration
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('customer_id')->constrained()->onDelete('cascade');
-            $table->foreignId('merchant_id')->constrained()->onDelete('cascade');
-            $table->foreignId('menu_id')->constrained()->onDelete('cascade');
+            $table->unsignedBigInteger('customer_id');
+            $table->unsignedBigInteger('menu_id');
             $table->integer('quantity');
             $table->date('delivery_date');
-            $table->enum('status', ['pending', 'completed', 'canceled']);
             $table->timestamps();
+
+            $table->foreign('customer_id')->references('id')->on('users')->onDelete('cascade');
+            $table->foreign('menu_id')->references('id')->on('menus')->onDelete('cascade');
         });
     }
 

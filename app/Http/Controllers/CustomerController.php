@@ -3,53 +3,96 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Menu;
+use App\Models\Order;
+use App\Models\Invoice;
 use App\Models\Customer;
-use App\Models\Merchant;
+use Illuminate\Support\Facades\Auth;
 
 class CustomerController extends Controller
 {
-
-    // Fungsi untuk mendapatkan profil customer
-    public function getProfile()
-    {
-        $customer = Auth::user()->customer;
-
-        return response()->json($customer, 200);
-    }
-
-    // Fungsi untuk memperbarui profil customer
     public function updateProfile(Request $request)
     {
-        $customer = Auth::user()->customer;
+        $user = auth()->user();
 
-        // Validasi data input
-        $validatedData = $request->validate([
-            'company_name' => 'required|string|max:255',
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'company' => 'required|string|max:255',
+            'contact' => 'required|string|max:255',
             'address' => 'required|string|max:255',
-            'contact' => 'required|string|max:255'
         ]);
 
-        // Memperbarui profil customer
-        $customer->update($validatedData);
+        $user->update([
+            'name' => $request->name,
+        ]);
 
-        // Mengembalikan respons sukses
-        return response()->json([
-            'message' => 'Profil customer berhasil diperbarui',
-            'customer' => $customer
-        ], 200);
+        if ($user->customer) {
+            $user->customer->update([
+                'company_name' => $request->company,
+                'contact' => $request->contact,
+                'address' => $request->address,
+            ]);
+        } else {
+            Customer::create([
+                'user_id' => $user->id,
+                'company_name' => $request->company,
+                'contact' => $request->contact,
+                'address' => $request->address,
+            ]);
+        }
+
+        return response()->json(['customer' => $user->load('customer')], 200);
     }
 
-    // Fungsi untuk mencari catering berdasarkan query
     public function searchCatering(Request $request)
     {
-        $query = $request->input('query');
+        $query = Menu::query();
 
-        // Mencari merchant berdasarkan nama perusahaan atau alamat yang sesuai dengan query
-        $merchants = Merchant::where('company_name', 'like', "%$query%")
-                            ->orWhere('address', 'like', "%$query%")
-                            ->get();
+        if ($request->has('location')) {
+            $query->whereHas('merchant', function($q) use ($request) {
+                $q->where('address', 'like', '%' . $request->location . '%');
+            });
+        }
 
-        return response()->json($merchants, 200);
+        if ($request->has('food_type')) {
+            $query->where('description', 'like', '%' . $request->food_type . '%');
+        }
+
+        $menus = $query->get();
+
+        return response()->json(['menus' => $menus], 200);
+    }
+
+    public function placeOrder(Request $request)
+    {
+        $request->validate([
+            'menu_id' => 'required|exists:menus,id',
+            'quantity' => 'required|integer|min:1',
+            'delivery_date' => 'required|date',
+        ]);
+
+        $order = Order::create([
+            'customer_id' => Auth::id(),
+            'menu_id' => $request->menu_id,
+            'quantity' => $request->quantity,
+            'delivery_date' => $request->delivery_date,
+        ]);
+
+        $menu = Menu::findOrFail($request->menu_id);
+        $total_price = $menu->price * $request->quantity;
+
+        $invoice = Invoice::create([
+            'order_id' => $order->id,
+            'total_price' => $total_price,
+        ]);
+
+        return response()->json(['message' => 'Order placed successfully', 'order' => $order, 'invoice' => $invoice], 201);
+    }
+
+    public function viewInvoice($id)
+    {
+        $invoice = Invoice::where('order_id', $id)->firstOrFail();
+
+        return response()->json(['invoice' => $invoice], 200);
     }
 }

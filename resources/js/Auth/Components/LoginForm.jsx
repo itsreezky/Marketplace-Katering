@@ -1,60 +1,47 @@
 import React, { useState } from "react";
 import Swal from "sweetalert2";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import { useUser } from "../../Controllers/UserContext";
 
-function LoginForm({ userType }) {
+const LoginForm = ({ userType }) => {
+    const [formData, setFormData] = useState({
+        email: "",
+        password: "",
+    });
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const { setUser } = useUser();
+
+    const handleChange = (e) => {
+        const { name, value } = e.target;
+        setFormData((prevFormData) => ({
+            ...prevFormData,
+            [name]: value,
+        }));
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
 
-        const formData = new FormData(e.target);
-        const data = {
-            email: formData.get("email"),
-            password: formData.get("password"),
-        };
-
         try {
             const response = await axios.post(
-                "http://localhost:8000/api/login",
-                data
+                `${import.meta.env.VITE_API_BASE_URL}/login`,
+                { ...formData, userType }
             );
 
-            if (response.status === 200) {
-                const token = response.data.token;
-                localStorage.setItem("authToken", token); // Simpan token di localStorage
-
-                Swal.fire({
-                    icon: "success",
-                    title: "Login Berhasil",
-                    text: "Anda berhasil masuk!",
-                    toast: true,
-                    position: "top-end",
-                    showConfirmButton: false,
-                    timer: 3000,
-                });
-
-                setTimeout(() => {
-                    navigate(`/${userType}s/profile`);
-                    window.location.reload();
-                }, 3000);
-            } else {
-                throw new Error(response.data.message || "Login gagal");
-            }
+            localStorage.setItem("user", JSON.stringify(response.data.user));
+            localStorage.setItem("token", response.data.token);
+            setUser(response.data.user);
+            Swal.fire("Success", "Login successful!", "success");
+            navigate(
+                userType === "customer"
+                    ? "/customers/profile"
+                    : "/merchants/profile"
+            );
         } catch (error) {
-            const errorMessage = error.response?.data?.message || error.message;
-            Swal.fire({
-                icon: "error",
-                title: "Login Gagal",
-                text: errorMessage,
-                toast: true,
-                position: "top-end",
-                showConfirmButton: false,
-                timer: 3000,
-            });
+            Swal.fire("Error", "Login failed. Try again!", "error");
         } finally {
             setLoading(false);
         }
@@ -75,6 +62,12 @@ function LoginForm({ userType }) {
                                     />
                                 </center>
                                 <div className="text-center mb-4">
+                                    <h4>
+                                        Login{" "}
+                                        {userType === "customer"
+                                            ? "Customers"
+                                            : "Merchants"}
+                                    </h4>
                                     <p className="mb-0">
                                         Silahkan masuk menggunakan akun anda.
                                     </p>
@@ -96,6 +89,8 @@ function LoginForm({ userType }) {
                                                 className="form-control"
                                                 id="inputEmailAddress"
                                                 name="email"
+                                                value={formData.email}
+                                                onChange={handleChange}
                                                 placeholder="example@example.com"
                                                 required
                                             />
@@ -116,16 +111,37 @@ function LoginForm({ userType }) {
                                                     className="form-control border-end-0"
                                                     id="inputChoosePassword"
                                                     name="password"
+                                                    value={formData.password}
+                                                    onChange={handleChange}
                                                     placeholder="Enter Password"
                                                     required
                                                 />
-                                                <button
-                                                    type="button"
-                                                    className="input-group-text"
+                                                <a
+                                                    href="javascript:;"
+                                                    className="input-group-text bg-transparent"
                                                 >
-                                                    <i className="bx bx-hide" />
-                                                </button>
+                                                    <i className="bx bx-hide"></i>
+                                                </a>
                                             </div>
+                                        </div>
+                                        <div className="col-md-6">
+                                            <div className="form-check form-switch">
+                                                <input
+                                                    className="form-check-input"
+                                                    type="checkbox"
+                                                    id="flexSwitchCheckChecked"
+                                                    defaultChecked
+                                                />
+                                                <label
+                                                    className="form-check-label"
+                                                    htmlFor="flexSwitchCheckChecked"
+                                                >
+                                                    Remember Me
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div className="col-md-6 text-end">
+                                            <Link to="/">Forgot Password?</Link>
                                         </div>
                                         <div className="col-12">
                                             <div className="d-grid">
@@ -136,24 +152,63 @@ function LoginForm({ userType }) {
                                                 >
                                                     {loading
                                                         ? "Loading..."
-                                                        : "Masuk"}
+                                                        : "Login"}
                                                 </button>
-                                            </div>
-                                        </div>
-                                        <div className="col-12">
-                                            <div className="text-center">
-                                                <p className="mb-0">
-                                                    Belum punya akun?{" "}
-                                                    <a
-                                                        href={`/${userType}s/register`}
-                                                    >
-                                                        Daftar disini.
-                                                    </a>
-                                                </p>
                                             </div>
                                         </div>
                                     </form>
                                 </div>
+                                <div className="text-center my-3">
+                                    <p className="mb-0">
+                                        Belum punya akun?{" "}
+                                        <Link
+                                            to={`/${
+                                                userType === "customer"
+                                                    ? "customers"
+                                                    : "merchants"
+                                            }/register`}
+                                        >
+                                            Daftar Disini
+                                        </Link>
+                                    </p>
+                                </div>
+                                <div className="login-separater text-center mb-4">
+                                    <span>OR SIGN IN WITH</span>
+                                    <hr />
+                                </div>
+                                <div className="list-inline contacts-social text-center">
+                                    <a
+                                        href="javascript:;"
+                                        className="list-inline-item bg-facebook text-white border-0"
+                                    >
+                                        <i className="bx bxl-facebook"></i>
+                                    </a>
+                                    <a
+                                        href="javascript:;"
+                                        className="list-inline-item bg-google text-white border-0"
+                                    >
+                                        <i className="bx bxl-google"></i>
+                                    </a>
+                                    <a
+                                        href="javascript:;"
+                                        className="list-inline-item bg-twitter text-white border-0"
+                                    >
+                                        <i className="bx bxl-twitter"></i>
+                                    </a>
+                                    <a
+                                        href="javascript:;"
+                                        className="list-inline-item bg-linkedin text-white border-0"
+                                    >
+                                        <i className="bx bxl-linkedin"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="card-footer py-3 border-0">
+                            <div className="text-center">
+                                <p className="mb-0">
+                                    © {new Date().getFullYear()}. itsReezky
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -161,6 +216,6 @@ function LoginForm({ userType }) {
             </div>
         </div>
     );
-}
+};
 
 export default LoginForm;

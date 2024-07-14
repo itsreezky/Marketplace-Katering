@@ -19,18 +19,45 @@ class OrderController extends Controller
         ]);
 
         // Membuat order baru untuk customer yang sedang login
-        $order = Auth::user()->customer->orders()->create([
-            'menu_id' => $validatedData['menu_id'],
-            'merchant_id' => $request->input('merchant_id'),
-            'quantity' => $validatedData['quantity'],
-            'delivery_date' => $validatedData['delivery_date'],
-            'status' => 'pending'
-        ]);
+        $order = Auth::user()->customer->orders()->create($validatedData);
 
         // Mengembalikan respons sukses
         return response()->json([
             'message' => 'Order berhasil dibuat',
             'order' => $order
         ], 201);
+    }
+
+    // Fungsi untuk memperbarui order yang sudah ada
+    public function update(Request $request, $id)
+    {
+        $order = Order::findOrFail($id);
+
+        // Validasi data input
+        $validatedData = $request->validate([
+            'quantity' => 'required|integer|min:1',
+            'delivery_date' => 'required|date',
+        ]);
+
+        // Memperbarui order yang ada
+        $order->update($validatedData);
+
+        // Mengembalikan respons sukses
+        return response()->json([
+            'message' => 'Order berhasil diperbarui',
+            'order' => $order
+        ], 200);
+    }
+
+    // Fungsi untuk menghapus order
+    public function destroy($id)
+    {
+        $order = Order::findOrFail($id);
+        $order->delete();
+
+        // Mengembalikan respons sukses
+        return response()->json([
+            'message' => 'Order berhasil dihapus'
+        ], 200);
     }
 }

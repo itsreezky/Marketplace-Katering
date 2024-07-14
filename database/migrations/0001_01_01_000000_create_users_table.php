@@ -16,8 +16,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
-            $table->enum('type', ['merchant', 'customer']);
-            $table->rememberToken();
+            $table->enum('role', ['merchant', 'customer']);
             $table->timestamps();
         });
 

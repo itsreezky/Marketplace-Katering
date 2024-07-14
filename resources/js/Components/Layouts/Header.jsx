@@ -6,8 +6,8 @@ import axios from "axios";
 // Menu Data
 const merchantMenu = [
     { name: "Dashboard", link: "/" },
-    { name: "Profil Merchant", link: "#" },
-    { name: "Menu Makanan", link: "#" },
+    { name: "Profil Merchant", link: "/merchants/profile" },
+    { name: "Menu Makanan", link: "/merchants/menu" },
     { name: "Pesanan", link: "#" },
     { name: "Invoice", link: "#" },
 ];
@@ -32,17 +32,26 @@ const renderMenu = (menu) =>
 
 const Header = () => {
     const [user, setUser] = useState(null);
+    const [loginDropdownOpen, setLoginDropdownOpen] = useState(false);
+    const [registerDropdownOpen, setRegisterDropdownOpen] = useState(false);
     const navigate = useNavigate();
 
     useEffect(() => {
         const fetchUser = async () => {
             try {
+                const token = localStorage.getItem("authToken");
                 const response = await axios.get(
-                    "http://localhost:8000/api/user/profile"
+                    "http://localhost:8000/api/user/profile",
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                        },
+                    }
                 );
                 setUser(response.data);
             } catch (error) {
-                console.log(error);
+                if (error.response && error.response.status === 401) {
+                }
             }
         };
 
@@ -51,7 +60,7 @@ const Header = () => {
 
     const handleLogout = async () => {
         try {
-            await axios.post("http://localhost:8000/api/customers/logout");
+            await axios.post("http://localhost:8000/api/logout");
             setUser(null);
             navigate("/");
             Swal.fire({
@@ -63,9 +72,7 @@ const Header = () => {
                 showConfirmButton: false,
                 timer: 3000,
             });
-        } catch (error) {
-            console.log(error);
-        }
+        } catch (error) {}
     };
 
     let menu;
@@ -95,7 +102,7 @@ const Header = () => {
                                 </nav>
                             </center>
                         </div>
-                        <div className="col-lg-3">
+                        <div className="col-lg-2">
                             <div className="header__right">
                                 <div className="header__right__auth">
                                     {user ? (
@@ -108,27 +115,81 @@ const Header = () => {
                                             </a>
                                         </>
                                     ) : (
-                                        <>
-                                            <a href="/customers/login">
-                                                Masuk Customer
-                                            </a>
-                                            <a href="/customers/register">
-                                                Daftar Customer
-                                            </a>
-                                            <a href="/merchants/login">
-                                                Masuk Merchant
-                                            </a>
-                                            <a href="/merchants/register">
-                                                Daftar Merchant
-                                            </a>
-                                        </>
+                                        <div className="btn-group">
+                                            <div className="dropdown me-3">
+                                                <button
+                                                    className="btn btn-outline-dark btn-sm dropdown-toggle"
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setLoginDropdownOpen(
+                                                            !loginDropdownOpen
+                                                        )
+                                                    }
+                                                >
+                                                    Masuk
+                                                </button>
+                                                {loginDropdownOpen && (
+                                                    <ul className="dropdown-menu show">
+                                                        <li>
+                                                            <a
+                                                                className="dropdown-item"
+                                                                href="/customers/login"
+                                                            >
+                                                                Pelanggan
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a
+                                                                className="dropdown-item"
+                                                                href="/merchants/login"
+                                                            >
+                                                                Merchant
+                                                            </a>
+                                                        </li>
+                                                    </ul>
+                                                )}
+                                            </div>
+                                            <div className="dropdown">
+                                                <button
+                                                    className="btn btn-outline-success btn-sm dropdown-toggle"
+                                                    type="button"
+                                                    onClick={() =>
+                                                        setRegisterDropdownOpen(
+                                                            !registerDropdownOpen
+                                                        )
+                                                    }
+                                                >
+                                                    Daftar
+                                                </button>
+                                                {registerDropdownOpen && (
+                                                    <ul className="dropdown-menu show">
+                                                        <li>
+                                                            <a
+                                                                className="dropdown-item"
+                                                                href="/customers/register"
+                                                            >
+                                                                Pelanggan
+                                                            </a>
+                                                        </li>
+                                                        <li>
+                                                            <a
+                                                                className="dropdown-item"
+                                                                href="/merchants/register"
+                                                            >
+                                                                Merchant
+                                                            </a>
+                                                        </li>
+                                                    </ul>
+                                                )}
+                                            </div>
+                                        </div>
                                     )}
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div className="canvas__open">
-                        <i className="fa fa-bars" />
+                        <i className="fa fa-bars"></i>
                     </div>
                 </div>
             </header>

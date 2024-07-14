@@ -1,3 +1,127 @@
+### Dokumentasi Backend
+
+#### 1. **AuthController**
+- `register(Request $request)`: Mendaftarkan pengguna baru dan melakukan login otomatis.
+  - Validasi data input.
+  - Membuat pengguna baru dengan data yang valid.
+  - Melakukan login otomatis untuk pengguna baru.
+  - Mengembalikan respons sukses dengan data pengguna.
+
+- `login(Request $request)`: Melakukan login untuk pengguna yang sudah terdaftar.
+  - Mendapatkan kredensial login dari permintaan.
+  - Mencoba login dengan kredensial yang diberikan.
+  - Mengembalikan respons sukses dengan data pengguna jika login berhasil.
+  - Mengembalikan respons error jika login gagal.
+
+- `logout()`: Melakukan logout untuk pengguna yang sedang login.
+  - Melakukan logout.
+  - Mengembalikan respons sukses.
+
+#### 2. **CustomerController**
+- `updateProfile(Request $request)`: Memperbarui profil customer yang sedang login.
+  - Validasi data input.
+  - Memperbarui profil customer dengan data yang valid.
+  - Mengembalikan respons sukses dengan data customer yang diperbarui.
+
+- `searchCatering(Request $request)`: Mencari catering berdasarkan query.
+  - Mendapatkan query dari permintaan.
+  - Mencari merchant yang sesuai dengan query.
+  - Mengembalikan hasil pencarian.
+
+#### 3. **MenuController**
+- `store(Request $request)`: Menambahkan menu baru untuk merchant yang sedang login.
+  - Validasi data input.
+  - Membuat menu baru dengan data yang valid.
+  - Mengembalikan respons sukses dengan data menu yang baru dibuat.
+
+- `update(Request $request, $id)`: Memperbarui menu yang sudah ada.
+  - Validasi data input.
+  - Memperbarui menu dengan data yang valid.
+  - Mengembalikan respons sukses dengan data menu yang diperbarui.
+
+- `destroy($id)`: Menghapus menu yang sudah ada.
+  - Menghapus menu berdasarkan ID.
+  - Mengembalikan respons sukses.
+
+#### 4. **MerchantController**
+- `updateProfile(Request $request)`: Memperbarui profil merchant yang sedang login.
+  - Validasi data input.
+  - Memperbarui profil merchant dengan data yang valid.
+  - Mengembalikan respons sukses dengan data merchant yang diperbarui.
+
+- `getOrders()`: Mendapatkan semua order untuk merchant yang sedang login.
+  - Mengembalikan data semua order untuk merchant.
+
+#### 5. **OrderController**
+- `store(Request $request)`: Membuat order baru untuk customer yang sedang login.
+  - Validasi data input.
+  - Membuat order baru dengan data yang valid.
+  - Mengembalikan respons sukses dengan data order yang baru dibuat.
+
+#### 6. **UserController**
+- `profile()`: Mendapatkan profil pengguna yang sedang login.
+  - Mengembalikan data pengguna yang sedang login.
+
+#### 7. **Middleware**
+- `IsCustomer`: Middleware untuk memastikan pengguna adalah customer.
+  - Memeriksa apakah pengguna yang sedang login adalah customer.
+  - Mengembalikan akses jika pengguna adalah customer.
+  - Mengembalikan respons error jika pengguna bukan customer.
+
+- `IsMerchant`: Middleware untuk memastikan pengguna adalah merchant.
+  - Memeriksa apakah pengguna yang sedang login adalah merchant.
+  - Mengembalikan akses jika pengguna adalah merchant.
+  - Mengembalikan respons error jika pengguna bukan merchant.
+
+#### 8. **Models**
+- `Customer`: Model untuk tabel customers.
+  - Relasi ke model `User`.
+  - Relasi ke model `Order`.
+
+- `Invoice`: Model untuk tabel invoices.
+
+- `Menu`: Model untuk tabel menus.
+  - Relasi ke model `Merchant`.
+
+- `Merchant`: Model untuk tabel merchants.
+  - Relasi ke model `User`.
+  - Relasi ke model `Menu`.
+  - Relasi ke model `Order`.
+
+- `Order`: Model untuk tabel orders.
+  - Relasi ke model `Customer`.
+  - Relasi ke model `Merchant`.
+  - Relasi ke model `Menu`.
+
+- `User`: Model untuk tabel users.
+  - Relasi ke model `Merchant`.
+  - Relasi ke model `Customer`.
+
+#### 9. **Routes**
+- `POST /register`: Mendaftarkan pengguna baru.
+- `POST /login`: Login pengguna.
+- `POST /logout`: Logout pengguna (dengan middleware `auth:sanctum`).
+
+- `GET /user/profile`: Mendapatkan profil pengguna yang sedang login (dengan middleware `auth:sanctum`).
+
+- **Merchant Routes** (dengan middleware `auth:sanctum`, `isMerchant`):
+  - `PUT /merchant/profile`: Memperbarui profil merchant.
+  - `GET /merchant/orders`: Mendapatkan semua order untuk merchant.
+  - `POST /menu`: Menambahkan menu baru.
+  - `PUT /menu/{id}`: Memperbarui menu.
+  - `DELETE /menu/{id}`: Menghapus menu.
+
+- **Customer Routes** (dengan middleware `auth:sanctum`, `isCustomer`):
+  - `PUT /customer/profile`: Memperbarui profil customer.
+  - `GET
+
+ /search/catering`: Mencari catering.
+  - `POST /order`: Membuat order baru.
+
+- **Fallback Route**:
+  - `GET /{path?}`: Menangani semua request lainnya dan menampilkan tampilan `App`.
+
+
 ### 1. Struktur Direktori
 
 ```

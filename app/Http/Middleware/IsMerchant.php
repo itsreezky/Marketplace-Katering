@@ -4,15 +4,23 @@ namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class IsMerchant
 {
+    /**
+     * Handle an incoming request.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  \Closure  $next
+     * @return mixed
+     */
     public function handle(Request $request, Closure $next)
     {
-        if (auth()->user() && auth()->user()->type == 'merchant') {
+        if (Auth::check() && Auth::user()->role === 'merchant') {
             return $next($request);
         }
 
-        return response()->json(['message' => 'Akses ditolak'], 403);
+        return response()->json(['error' => 'Unauthorized'], 401);
     }
 }

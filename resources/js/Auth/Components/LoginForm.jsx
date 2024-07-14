@@ -1,22 +1,9 @@
-// ========================================
-// Author: Reezky
-// Email: its@reezky.cloud
-// ========================================
-// Website: https://reezky.cloud/
-// Github: https://github.com/itsreezky
-// LinkedIn: https://www.linkedin.com/in/itsreezky/
-// ========================================
-// File: Login.jsx
-// Path: resources/js/Auth/Customers/Login.jsx
-// Created Date: 13/07/2024 17:31:59
-// ========================================
-
 import React, { useState } from "react";
 import Swal from "sweetalert2";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-function CustomersLogin() {
+function LoginForm({ userType }) {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
@@ -26,14 +13,20 @@ function CustomersLogin() {
 
         const formData = new FormData(e.target);
         const data = {
-            email: formData.get('email'),
-            password: formData.get('password')
+            email: formData.get("email"),
+            password: formData.get("password"),
         };
 
         try {
-            const response = await axios.post('http://localhost:8000/api/login', data);
+            const response = await axios.post(
+                "http://localhost:8000/api/login",
+                data
+            );
 
             if (response.status === 200) {
+                const token = response.data.token;
+                localStorage.setItem("authToken", token); // Simpan token di localStorage
+
                 Swal.fire({
                     icon: "success",
                     title: "Login Berhasil",
@@ -45,17 +38,18 @@ function CustomersLogin() {
                 });
 
                 setTimeout(() => {
-                    navigate("/customers/profile");
+                    navigate(`/${userType}s/profile`);
                     window.location.reload();
                 }, 3000);
             } else {
                 throw new Error(response.data.message || "Login gagal");
             }
         } catch (error) {
+            const errorMessage = error.response?.data?.message || error.message;
             Swal.fire({
                 icon: "error",
                 title: "Login Gagal",
-                text: error.message,
+                text: errorMessage,
                 toast: true,
                 position: "top-end",
                 showConfirmButton: false,
@@ -150,7 +144,9 @@ function CustomersLogin() {
                                             <div className="text-center">
                                                 <p className="mb-0">
                                                     Belum punya akun?{" "}
-                                                    <a href="/customers/register">
+                                                    <a
+                                                        href={`/${userType}s/register`}
+                                                    >
                                                         Daftar disini.
                                                     </a>
                                                 </p>
@@ -167,4 +163,4 @@ function CustomersLogin() {
     );
 }
 
-export default CustomersLogin;
+export default LoginForm;

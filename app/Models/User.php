@@ -5,10 +5,11 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
         'name', 'email', 'password', 'type',
@@ -18,11 +19,13 @@ class User extends Authenticatable
         'password', 'remember_token',
     ];
 
+    // Relasi ke model Merchant
     public function merchant()
     {
         return $this->hasOne(Merchant::class);
     }
 
+    // Relasi ke model Customer
     public function customer()
     {
         return $this->hasOne(Customer::class);

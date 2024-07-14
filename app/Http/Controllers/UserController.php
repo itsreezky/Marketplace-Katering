@@ -9,7 +9,6 @@ class UserController extends Controller
 {
     public function profile()
     {
-        $user = Auth::user();
-        return response()->json($user);
+        return response()->json(Auth::user());
     }
 }

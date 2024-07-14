@@ -2,58 +2,60 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import DataTable from "react-data-table-component";
 
-function CustomersProfile() {
-    const [customer, setCustomer] = useState({});
-    const [invoices, setInvoices] = useState([]);
+function MerchantsProfile() {
+    const [merchant, setMerchant] = useState({});
+    const [orders, setOrders] = useState([]);
     const [formData, setFormData] = useState({
-        name: "",
+        company_name: "",
         email: "",
         contact: "",
         address: "",
+        description: "",
     });
 
     useEffect(() => {
-        const fetchCustomerData = async () => {
+        const fetchMerchantData = async () => {
             try {
                 const response = await axios.get(
-                    "http://localhost:8000/api/customers/profile"
+                    "http://localhost:8000/api/merchants/profile"
                 );
-                setCustomer(response.data);
+                setMerchant(response.data);
                 setFormData({
-                    name: response.data.name,
+                    company_name: response.data.company_name,
                     email: response.data.email,
                     contact: response.data.contact,
                     address: response.data.address,
+                    description: response.data.description,
                 });
             } catch (error) {
                 console.log(error);
             }
         };
 
-        fetchCustomerData();
+        fetchMerchantData();
     }, []);
 
     useEffect(() => {
-        const fetchInvoices = async () => {
+        const fetchOrders = async () => {
             try {
                 const response = await axios.get(
-                    "http://localhost:8000/api/customers/invoices",
+                    "http://localhost:8000/api/merchants/orders",
                     {
                         headers: {
-                            Authorization: `Bearer ${customer.token}`,
+                            Authorization: `Bearer ${merchant.token}`,
                         },
                     }
                 );
-                setInvoices(response.data);
+                setOrders(response.data);
             } catch (error) {
                 console.log(error.message);
             }
         };
 
-        if (customer.token) {
-            fetchInvoices();
+        if (merchant.token) {
+            fetchOrders();
         }
-    }, [customer]);
+    }, [merchant]);
 
     const handleChange = (e) => {
         const { name, value } = e.target;
@@ -65,28 +67,23 @@ function CustomersProfile() {
 
     const handleSave = () => {
         axios
-            .put("http://localhost:8000/api/customers/profile", formData)
+            .put("http://localhost:8000/api/merchants/profile", formData)
             .then((response) => {
                 alert("Profile updated successfully!");
-                setCustomer(response.data);
+                setMerchant(response.data);
             })
             .catch((error) => console.log(error));
     };
 
     const columns = [
         {
-            name: "ID",
-            selector: (row) => row.id,
-            sortable: true,
-        },
-        {
             name: "Order ID",
             selector: (row) => row.order_id,
             sortable: true,
         },
         {
-            name: "Merchant ID",
-            selector: (row) => row.merchant_id,
+            name: "Customer ID",
+            selector: (row) => row.customer_id,
             sortable: true,
         },
         {
@@ -115,12 +112,12 @@ function CustomersProfile() {
                                     width={110}
                                 />
                                 <div className="mt-3">
-                                    <h4>{customer.name}</h4>
+                                    <h4>{merchant.company_name}</h4>
                                     <p className="text-secondary mb-1">
-                                        Customers
+                                        Merchant
                                     </p>
                                     <p className="text-muted font-size-sm">
-                                        {customer.address}
+                                        {merchant.address}
                                     </p>
                                 </div>
                             </div>
@@ -132,14 +129,14 @@ function CustomersProfile() {
                         <div className="card-body">
                             <div className="row mb-3">
                                 <div className="col-sm-3">
-                                    <h6 className="mb-0">Full Name</h6>
+                                    <h6 className="mb-0">Company Name</h6>
                                 </div>
                                 <div className="col-sm-9 text-secondary">
                                     <input
                                         type="text"
                                         className="form-control"
-                                        name="name"
-                                        value={formData.name}
+                                        name="company_name"
+                                        value={formData.company_name}
                                         onChange={handleChange}
                                     />
                                 </div>
@@ -162,6 +159,7 @@ function CustomersProfile() {
                                 <div className="col-sm-3">
                                     <h6 className="mb-0">Phone</h6>
                                 </div>
+
                                 <div className="col-sm-9 text-secondary">
                                     <input
                                         type="text"
@@ -186,6 +184,19 @@ function CustomersProfile() {
                                     />
                                 </div>
                             </div>
+                            <div className="row mb-3">
+                                <div className="col-sm-3">
+                                    <h6 className="mb-0">Description</h6>
+                                </div>
+                                <div className="col-sm-9 text-secondary">
+                                    <textarea
+                                        className="form-control"
+                                        name="description"
+                                        value={formData.description}
+                                        onChange={handleChange}
+                                    />
+                                </div>
+                            </div>
                             <div className="row">
                                 <div className="col-sm-3" />
                                 <div className="col-sm-9 text-secondary">
@@ -204,11 +215,11 @@ function CustomersProfile() {
                             <div className="card">
                                 <div className="card-body">
                                     <h5 className="d-flex align-items-center mb-3">
-                                        Invoice
+                                        Orders
                                     </h5>
                                     <DataTable
                                         columns={columns}
-                                        data={invoices}
+                                        data={orders}
                                         pagination
                                     />
                                 </div>
@@ -221,4 +232,4 @@ function CustomersProfile() {
     );
 }
 
-export default CustomersProfile;
+export default MerchantsProfile;

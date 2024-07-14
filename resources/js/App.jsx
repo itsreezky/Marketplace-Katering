@@ -14,19 +14,27 @@
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 
+// Main Layout
 import MainLayouts from "./Layouts/MainLayouts";
+// Dashboard Content
 import HomeContent from "./Components/Home/Content";
-import CustomersLogin from "./Auth/Customers/Login";
-import CustomersRegister from "./Auth/Customers/CustomersRegister";
-import MerchantsRegister from "./Auth/Customers/MerchantsRegister";
-import CustomersProfile from "./Auth/Customers/Profile";
+// Customers
+import CustomersLogin from "./Auth/CustomersLogin";
+import CustomersRegister from "./Auth/CustomersRegister";
+import CustomersProfile from "./Auth/CustomersProfile";
+// Merchants
+import MerchantsLogin from "./Auth/MerchantsLogin";
+import MerchantsRegister from "./Auth/MerchantsRegister";
+import MerchantsProfile from "./Auth/MerchantsProfile";
+import MerchantsMenu from "./Auth/MerchantsMenu";
+// Profile
 
 function App() {
     return (
         <Router>
             <MainLayouts>
                 <Routes>
-                    {/* HOMEPAGE routes */}
+                    {/* Home routes */}
                     <Route path="/" element={<HomeContent />} />
                     {/* Customers routes */}
                     <Route
@@ -38,13 +46,23 @@ function App() {
                         element={<CustomersRegister />}
                     />
                     <Route
+                        path="/customers/profile"
+                        element={<CustomersProfile />}
+                    />
+                    {/* Merchants routes */}
+                    <Route
+                        path="/merchants/login"
+                        element={<MerchantsLogin />}
+                    />
+                    <Route
                         path="/merchants/register"
                         element={<MerchantsRegister />}
                     />
                     <Route
-                        path="/customers/profile"
-                        element={<CustomersProfile />}
+                        path="/merchants/profile"
+                        element={<MerchantsProfile />}
                     />
+                    <Route path="/merchants/menu" element={<MerchantsMenu />} />
                 </Routes>
             </MainLayouts>
         </Router>

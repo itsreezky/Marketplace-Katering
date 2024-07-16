@@ -1,73 +1,41 @@
-## BACKEND MAPPING
-### 1. Struktur Direktori
+### Rincian Fungsional
 
-```
-app/
-    Http/
-        Controllers/
-            AuthController.php
-            MerchantController.php
-            CustomerController.php
-            MenuController.php
-            OrderController.php
-    Models/
-        User.php
-        Merchant.php
-        Customer.php
-        Menu.php
-        Order.php
-database/
-    migrations/
-        create_users_table.php
-        create_merchants_table.php
-        create_customers_table.php
-        create_menus_table.php
-        create_orders_table.php
-routes/
-    web.php
-    api.php
-```
+- **User Model**: Mewakili pengguna aplikasi. Memiliki relasi one-to-one dengan model `Customer` atau `Merchant`.
+- **Customer Model**: Mewakili data customer. Memiliki relasi one-to-one dengan `User` dan relasi one-to-many dengan `Order` dan `Invoice`.
+- **Merchant Model**: Mewakili data merchant. Memiliki relasi one-to-one dengan `User` dan relasi one-to-many dengan `KelolaMenu`, `DaftarOrder`, dan `Invoice`.
+- **KelolaMenu Model**: Mewakili menu yang dikelola oleh merchant. Memiliki relasi many-to-one dengan `Merchant` dan relasi one-to-many dengan `DaftarOrder`.
+- **DaftarOrder Model**: Mewakili daftar order yang dibuat oleh customer. Memiliki relasi many-to-one dengan `Customer`, `Merchant`, dan `KelolaMenu`.
+- **Order Model**: Mewakili order yang dibuat oleh customer. Memiliki relasi many-to-one dengan `Customer`, `Merchant`, dan `KelolaMenu`.
+- **Invoice Model**: Mewakili invoice untuk order. Memiliki relasi many-to-one dengan `Customer` dan `Merchant`.
 
-### 2. Model dan Migrasi
+- **Register**: Validasi data input, buat user baru, jika user adalah customer atau merchant, juga buat data di tabel `customers` atau `merchants` yang sesuai.
+- **Login**: Validasi data input, cek email dan password, jika benar, buat token autentikasi dan kirimkan kembali.
+- **User Details**: Ambil data user yang sedang login, dan jika user
 
-#### User Model dan Migrasi
+ adalah customer atau merchant, ambil data detail dari tabel yang sesuai.
+- **Update User**: Validasi data input, perbarui data di tabel `users` dan `customers` atau `merchants` sesuai dengan peran user yang sedang login.
+- **Update Photo**: Validasi file foto yang diunggah, simpan file, perbarui jalur file foto di tabel `users` dan `customers` atau `merchants`.
+- **Merchant Details**: Ambil data merchant yang sedang login, termasuk data menu, order, dan invoice terkait.
+- **Store Menu**: Validasi data input, buat menu baru untuk merchant yang sedang login.
+- **Update Menu**: Validasi data input, perbarui data menu yang sesuai dengan ID menu.
+- **Delete Menu**: Hapus data menu yang sesuai dengan ID menu.
+- **Confirm Payment**: Validasi data input, perbarui status pembayaran di tabel `invoice`, dan perbarui status order berdasarkan status pembayaran.
+- **Order Details**: Ambil semua data order yang sesuai dengan user yang sedang login.
+- **Create Order**: Validasi data input, buat order baru untuk customer yang sedang login.
+- **Upload Payment Proof**: Validasi file bukti pembayaran yang diunggah, simpan file, perbarui jalur file bukti pembayaran di tabel `invoice`.
 
-```php
-// app/Models/User.php
+### Langkah-Langkah Implementasi
 
-namespace App\Models;
+1. **Membuat Migrasi Database**
+2. **Membuat Model**
+2. **Membuat Controller**
+3. **Menambahkan Routes API**
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
+### 1. Migrasi untuk Database
 
-class User extends Authenticatable
-{
-    use HasFactory, Notifiable;
-
-    protected $fillable = [
-        'name', 'email', 'password', 'type',
-    ];
-
-    protected $hidden = [
-        'password', 'remember_token',
-    ];
-
-    public function merchant()
-    {
-        return $this->hasOne(Merchant::class);
-    }
-
-    public function customer()
-    {
-        return $this->hasOne(Customer::class);
-    }
-}
-```
+**1.1. Migrasi Users Table**
 
 ```php
-// database/migrations/xxxx_xx_xx_create_users_table.php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -78,11 +46,10 @@ class CreateUsersTable extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('nama');
             $table->string('email')->unique();
             $table->string('password');
-            $table->enum('type', ['merchant', 'customer']);
-            $table->rememberToken();
+            $table->enum('role', ['customer', 'merchant']);
             $table->timestamps();
         });
     }
@@ -94,103 +61,9 @@ class CreateUsersTable extends Migration
 }
 ```
 
-#### Merchant Model dan Migrasi
+**1.2. Migrasi Customers Table**
 
 ```php
-// app/Models/Merchant.php
-
-namespace App\Models;
-
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-
-class Merchant extends Model
-{
-    use HasFactory;
-
-    protected $fillable = [
-        'user_id', 'company_name', 'address', 'contact', 'description'
-    ];
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    public function menus()
-    {
-        return $this->hasMany(Menu::class);
-    }
-
-    public function orders()
-    {
-        return $this->hasMany(Order::class);
-    }
-}
-```
-
-```php
-// database/migrations/xxxx_xx_xx_create_merchants_table.php
-
-use Illuminate\Database\Migrations\Migration;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
-
-class CreateMerchantsTable extends Migration
-{
-    public function up()
-    {
-        Schema::create('merchants', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('company_name');
-            $table->string('address');
-            $table->string('contact');
-            $table->text('description');
-            $table->timestamps();
-        });
-    }
-
-    public function down()
-    {
-        Schema::dropIfExists('merchants');
-    }
-}
-```
-
-#### Customer Model dan Migrasi
-
-```php
-// app/Models/Customer.php
-
-namespace App\Models;
-
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-
-class Customer extends Model
-{
-    use HasFactory;
-
-    protected $fillable = [
-        'user_id', 'company_name', 'address', 'contact'
-    ];
-
-    public function user()
-    {
-        return $this->belongsTo(User::class);
-    }
-
-    public function orders()
-    {
-        return $this->hasMany(Order::class);
-    }
-}
-```
-
-```php
-// database/migrations/xxxx_xx_xx_create_customers_table.php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -201,10 +74,11 @@ class CreateCustomersTable extends Migration
     {
         Schema::create('customers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->string('company_name');
-            $table->string('address');
-            $table->string('contact');
+            $table->foreignId('id_customer')->constrained('users')->onDelete('cascade');
+            $table->string('no_hp');
+            $table->string('nama_kantor');
+            $table->string('alamat');
+            $table->string('foto_profile')->nullable();
             $table->timestamps();
         });
     }
@@ -216,114 +90,115 @@ class CreateCustomersTable extends Migration
 }
 ```
 
-#### Menu Model dan Migrasi
+**1.3. Migrasi Merchants Table**
 
 ```php
-// app/Models/Menu.php
-
-namespace App\Models;
-
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-
-class Menu extends Model
-{
-    use HasFactory;
-
-    protected $fillable = [
-        'merchant_id', 'name', 'description', 'photo', 'price'
-    ];
-
-    public function merchant()
-    {
-        return $this->belongsTo(Merchant::class);
-    }
-}
-```
-
-```php
-// database/migrations/xxxx_xx_xx_create_menus_table.php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateMenusTable extends Migration
+class CreateMerchantsTable extends Migration
 {
     public function up()
     {
-        Schema::create('menus', function (Blueprint $table) {
+        Schema::create('merchants', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('merchant_id')->constrained()->onDelete('cascade');
-            $table->string('name');
-            $table->text('description');
-            $table->string('photo');
-            $table->decimal('price', 8, 2);
+            $table->foreignId('id_merchant')->constrained('users')->onDelete('cascade');
+            $table->string('nama_kantor');
+            $table->string('no_hp');
+            $table->string('alamat');
+            $table->string('foto_profile')->nullable();
             $table->timestamps();
         });
     }
 
     public function down()
     {
-        Schema::dropIfExists('menus');
+        Schema::dropIfExists('merchants');
     }
 }
 ```
 
-#### Order Model dan Migrasi
+**1.4. Migrasi Kelola Menu Table**
 
 ```php
-// app/Models/Order.php
-
-namespace App\Models;
-
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
-
-class Order extends Model
-{
-    use HasFactory;
-
-    protected $fillable = [
-        'customer_id', 'merchant_id', 'menu_id', 'quantity', 'delivery_date', 'status'
-    ];
-
-    public function customer()
-    {
-        return $this->belongsTo(Customer::class);
-    }
-
-    public function merchant()
-    {
-        return $this->belongsTo(Merchant::class);
-    }
-
-    public function menu()
-    {
-        return $this->belongsTo(Menu::class);
-    }
-}
-```
-
-```php
-// database/migrations/xxxx_xx_xx_create_orders_table.php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class CreateOrdersTable extends Migration
+class CreateKelolaMenuTable extends Migration
+{
+    public function up()
+    {
+        Schema::create('kelola_menu', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('id_merchant')->constrained('merchants')->onDelete('cascade');
+            $table->string('nama_menu');
+            $table->integer('stok_menu');
+            $table->decimal('harga_menu', 10, 2);
+            $table->text('deskripsi_menu');
+            $table->string('foto_menu')->nullable();
+            $table->timestamps();
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('kelola_menu');
+    }
+}
+```
+
+**1.5. Migrasi Daftar Order Table**
+
+```php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateDaftarOrderTable extends Migration
+{
+    public function up()
+    {
+        Schema::create('daftar_order', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('id_merchant')->constrained('merchants')->onDelete('cascade');
+            $table->foreignId('id_customer')->constrained('customers')->onDelete('cascade');
+            $table->foreignId('id_menu')->constrained('kelola_menu')->onDelete('cascade');
+            $table->integer('jumlah_order');
+            $table->string('no_hp');
+            $table->string('alamat_pengiriman');
+            $table->enum('status_order', ['Pesanan pending', 'Pesanan disiapkan', 'Pesanan diantar', 'Pesanan Selesai', 'Pesanan Gagal']);
+            $table->timestamps();
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('daftar_order');
+    }
+}
+```
+
+**1.6. Migrasi Order Table**
+
+```php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+class CreateOrderTable extends Migration
 {
     public function up()
     {
         Schema::create('orders', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('customer_id')->constrained()->onDelete('cascade');
-            $table->foreignId('merchant_id')->constrained()->onDelete('cascade');
-            $table->foreignId('menu_id')->constrained()->onDelete('cascade');
-            $table->integer('quantity');
-            $table->date('delivery_date');
-            $table->enum('status', ['pending', 'completed', 'canceled']);
+            $table->foreignId('id_merchant')->constrained('merchants')->onDelete('cascade');
+            $table->foreignId('id_customer')->constrained('customers')->onDelete('cascade');
+            $table->foreignId('menu_id')->constrained('kelola_menu')->onDelete('cascade');
+            $table->integer('jumlah_order');
+            $table->string('no_hp');
+            $table->string('alamat_pengiriman');
             $table->timestamps();
         });
     }
@@ -335,225 +210,516 @@ class CreateOrdersTable extends Migration
 }
 ```
 
-### 3. Controller dan Endpoint
-
-#### AuthController
+**1.7. Migrasi Invoice Table**
 
 ```php
-// app/Http/Controllers/AuthController.php
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
+class CreateInvoiceTable extends Migration
+{
+    public function up()
+    {
+        Schema::create('invoices', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('id_merchant')->constrained('merchants')->onDelete('cascade');
+            $table->foreignId('id_customer')->constrained('customers')->onDelete('cascade');
+            $table->decimal('jumlah_pembayaran', 10, 2);
+            $table->string('bukti_pembayaran')->nullable();
+            $table->enum('status_pembayaran', ['Menunggu Konfirmasi', 'Pembayaran Diterima', 'Pembayaran Kadaluarsa']);
+            $table->timestamps();
+        });
+    }
+
+    public function down()
+    {
+        Schema::dropIfExists('invoices');
+    }
+}
+```
+
+### 2. Membuat Model
+
+**2.1. User Model**
+
+```php
+namespace App\Models;
+
+use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Laravel\Sanctum\HasApiTokens;
+
+class User extends Authenticatable
+{
+    use HasApiTokens, HasFactory, Notifiable;
+
+    protected $fillable = [
+        'nama', 'email', 'password', 'role', 'foto_profile',
+    ];
+
+    public function customer()
+    {
+        return $this->hasOne(Customer::class, 'id_customer');
+    }
+
+    public function merchant()
+    {
+        return $this->hasOne(Merchant::class, 'id_merchant');
+    }
+}
+```
+
+**2.2. Customer Model**
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Customer extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'id_customer', 'no_hp', 'nama_kantor', 'alamat', 'foto_profile',
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id_customer');
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(Order::class, 'id_customer');
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class, 'id_customer');
+    }
+}
+```
+
+**2.3. Merchant Model**
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Merchant extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'id_merchant', 'nama_kantor', 'no_hp', 'alamat', 'foto_profile',
+    ];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'id_merchant');
+    }
+
+    public function menu()
+    {
+        return $this->hasMany(KelolaMenu::class, 'id_merchant');
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(DaftarOrder::class, 'id_merchant');
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class, 'id_merchant');
+    }
+}
+```
+
+**2.4. KelolaMenu Model**
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class KelolaMenu extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'id_merchant', 'nama_menu', 'stok_menu', 'harga_menu', 'deskripsi_menu', 'foto_menu',
+    ];
+
+    public function merchant()
+    {
+        return $this->belongsTo(Merchant::class, 'id_merchant');
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(DaftarOrder::class, 'id_menu');
+    }
+}
+```
+
+**2.5. DaftarOrder Model**
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class DaftarOrder extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'id_merchant', 'id_customer', 'id_menu', 'jumlah_order', 'no_hp', 'alamat_pengiriman', 'status_order',
+    ];
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'id_customer');
+    }
+
+    public function merchant()
+    {
+        return $this->belongsTo(Merchant::class, 'id_merchant');
+    }
+
+    public function menu()
+    {
+        return $this->belongsTo(KelolaMenu::class, 'id_menu');
+    }
+}
+```
+
+**2.6. Order Model**
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Order extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'id_merchant', 'id_customer', 'id_menu', 'jumlah_order', 'no_hp', 'alamat_pengiriman',
+    ];
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'id_customer');
+    }
+
+    public function merchant()
+    {
+        return $this->belongsTo(Merchant::class, 'id_merchant');
+    }
+
+    public function menu()
+    {
+        return $this->belongsTo(KelolaMenu::class, 'id_menu');
+    }
+}
+```
+
+**2.7. Invoice Model**
+
+```php
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+
+class Invoice extends Model
+{
+    use HasFactory;
+
+    protected $fillable = [
+        'id_merchant', 'id_customer', 'jumlah_pembayaran', 'bukti_pembayaran', 'status_pembayaran',
+    ];
+
+    public function customer()
+    {
+        return $this->belongsTo(Customer::class, 'id_customer');
+    }
+
+    public function merchant()
+    {
+        return $this->belongsTo(Merchant::class, 'id_merchant');
+    }
+}
+```
+
+### 3. Membuat Controller
+
+**3.1. UserController**
+
+```php
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\User;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Customer;
+use App\Models\Merchant;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
-class AuthController extends Controller
+class UserController extends Controller
 {
+    // Registrasi user baru
     public function register(Request $request)
     {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
+        $request->validate([
+            'nama' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8',
-            'type' => 'required|in:merchant,customer'
+            'role' => 'required|in:customer,merchant',
+            'no_hp' => 'required|string|max:15',
+            'nama_kantor' => 'required|string|max:255',
+            'alamat' => 'required|string|max:255',
+            'foto_profile' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
+
+        // Simpan foto profil jika ada
+        $path = $request->hasFile('foto_profile') ? $request->file('foto_profile')->store('public/profile_photos') : null;
 
         $user = User::create([
-            'name' => $validatedData['name'],
-            'email' => $validatedData['email'],
-            'password' => Hash::make($validatedData['password']),
-            'type' => $validatedData['type']
+            'nama' => $request->nama,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => $request->role,
+            'foto_profile' => $path,
         ]);
 
-        Auth::login($user);
-
-        return response()->json([
-            'message' => 'Registrasi berhasil',
-            'user' => $user
-        ], 201);
-    }
-
-    public function login(Request $request)
-    {
-        $credentials = $request->only('email', 'password');
-
-        if (Auth::attempt($credentials)) {
-            $user = Auth::user();
-            return response()->json([
-                'message' => 'Login berhasil',
-                'user' => $user
-            ], 200);
+        if ($user->role == 'customer') {
+            Customer::create([
+                'id_customer' => $user->id,
+                'no_hp' => $request->no_hp,
+                'nama_kantor' => $request->nama_kantor,
+                'alamat' => $request->alamat,
+                'foto_profile' => $path,
+            ]);
+        } else {
+            Merchant::create([
+                'id_merchant' => $user->id,
+                'nama_kantor' => $request->nama_kantor,
+                'no_hp' => $request->no_hp,
+                'alamat' => $request->alamat,
+                'foto_profile' => $path,
+            ]);
         }
 
-        return response()->json([
-            'message' => 'Email atau password salah'
-        ], 401);
+        return response()->json(['message' => 'Registrasi berhasil'], 201);
     }
 
-    public function logout()
-    {
-        Auth::logout();
 
-        return response()->json([
-            'message' => 'Logout berhasil'
-        ], 200);
+    // Login user
+    public function login(Request $request)
+    {
+        $request->validate([
+            'email' => 'required|string|email',
+            'password' => 'required|string',
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+
+        if (! $user || ! Hash::check($request->password, $user->password)) {
+            throw ValidationException::withMessages([
+                'email' => ['Email atau password salah'],
+            ]);
+        }
+
+        $token = $user->createToken('authToken')->plainTextToken;
+
+        return response()->json(['token' => $token, 'role' => $user->role], 200);
+    }
+
+    // Menampilkan data user yang sedang login
+    public function userDetails()
+    {
+        $user = auth()->user();
+        $roleDetails = null;
+
+        if ($user->role == 'Customer') {
+            $roleDetails = $user->customer;
+        } else {
+            $roleDetails = $user->merchant;
+        }
+
+        return response()->json(['user' => $user, 'details' => $roleDetails], 200);
+    }
+
+    // Edit data user yang sedang login
+    public function updateUser(Request $request)
+    {
+        $user = auth()->user();
+
+        $request->validate([
+            'nama' => 'string|max:255',
+            'email' => 'string|email|max:255|unique:users,email,' . $user->id,
+            'password' => 'string|min:8|nullable',
+        ]);
+
+        if ($request->filled('password')) {
+            $user->password = Hash::make($request->password);
+        }
+
+        $user->update($request->only('nama', 'email'));
+
+        if ($user->role == 'Customer') {
+            $user->customer->update($request->only('no_hp', 'nama_kantor', 'alamat', 'foto_profile'));
+        } else {
+            $user->merchant->update($request->only('nama_kantor', 'no_hp', 'alamat', 'foto_profile'));
+        }
+
+        return response()->json(['message' => 'Data berhasil diperbarui'], 200);
+    }
+
+    // Edit foto user yang sedang login
+    public function updatePhoto(Request $request)
+    {
+        $user = auth()->user();
+        $request->validate([
+            'foto_profile' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
+
+        $path = $request->file('foto_profile')->store('public/profile_photos');
+        $user->update(['foto_profile' => $path]);
+
+        if ($user->role == 'Customer') {
+            $user->customer->update(['foto_profile' => $path]);
+        } else {
+            $user->merchant->update(['foto_profile' => $path]);
+        }
+
+        return response()->json(['message' => 'Foto berhasil diperbarui'], 200);
     }
 }
+
 ```
 
-#### MerchantController
+**3.2. MerchantController**
 
 ```php
-// app/Http/Controllers/MerchantController.php
-
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Merchant;
+use App\Models\KelolaMenu;
+use App\Models\DaftarOrder;
+use App\Models\Invoice;
 
 class MerchantController extends Controller
 {
-    public function updateProfile(Request $request)
+    // Menampilkan data merchant yang sedang login
+    public function merchantDetails()
     {
-        $merchant = Auth::user()->merchant;
+        $user = auth()->user();
+        $merchant = $user->merchant;
 
-        $validatedData = $request->validate([
-            'company_name' =>
+        $menu = KelolaMenu::where('id_merchant', $merchant->id)->get();
+        $orders = DaftarOrder::where('id_merchant', $merchant->id)->get();
+        $invoices = Invoice::where('id_merchant', $merchant->id)->get();
 
- 'required|string|max:255',
-            'address' => 'required|string|max:255',
-            'contact' => 'required|string|max:255',
-            'description' => 'nullable|string'
+        return response()->json(['merchant' => $merchant, 'menu' => $menu, 'orders' => $orders, 'invoices' => $invoices], 200);
+    }
+
+    // CRUD Kelola Menu
+    public function storeMenu(Request $request)
+    {
+        $request->validate([
+            'nama_menu' => 'required|string|max:255',
+            'stok_menu' => 'required|integer',
+            'harga_menu' => 'required|numeric',
+            'deskripsi_menu' => 'required|string',
+            'foto_menu' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        $merchant->update($validatedData);
+        $menu = new KelolaMenu($request->only('nama_menu', 'stok_menu', 'harga_menu', 'deskripsi_menu'));
+        if ($request->hasFile('foto_menu')) {
+            $path = $request->file('foto_menu')->store('public/menu_photos');
+            $menu->foto_menu = $path;
+        }
 
-        return response()->json([
-            'message' => 'Profil merchant berhasil diperbarui',
-            'merchant' => $merchant
-        ], 200);
+        $menu->id_merchant = auth()->user()->merchant->id;
+        $menu->save();
+
+        return response()->json(['message' => 'Menu berhasil ditambahkan', 'menu' => $menu], 201);
     }
 
-    public function getOrders()
+    public function updateMenu(Request $request, $id)
     {
-        $merchant = Auth::user()->merchant;
-        $orders = $merchant->orders;
-
-        return response()->json($orders, 200);
-    }
-}
-```
-
-#### CustomerController
-
-```php
-// app/Http/Controllers/CustomerController.php
-
-namespace App\Http\Controllers;
-
-use Illuminate\Http\Request;
-use App\Models\Customer;
-
-class CustomerController extends Controller
-{
-    public function updateProfile(Request $request)
-    {
-        $customer = Auth::user()->customer;
-
-        $validatedData = $request->validate([
-            'company_name' => 'required|string|max:255',
-            'address' => 'required|string|max:255',
-            'contact' => 'required|string|max:255'
+        $request->validate([
+            'nama_menu' => 'string|max:255',
+            'stok_menu' => 'integer',
+            'harga_menu' => 'numeric',
+            'deskripsi_menu' => 'string',
+            'foto_menu' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        $customer->update($validatedData);
+        $menu = KelolaMenu::findOrFail($id);
+        $menu->update($request->only('nama_menu', 'stok_menu', 'harga_menu', 'deskripsi_menu'));
 
-        return response()->json([
-            'message' => 'Profil customer berhasil diperbarui',
-            'customer' => $customer
-        ], 200);
+        if ($request->hasFile('foto_menu')) {
+            $path = $request->file('foto_menu')->store('public/menu_photos');
+            $menu->update(['foto_menu' => $path]);
+        }
+
+        return response()->json(['message' => 'Menu berhasil diperbarui', 'menu' => $menu], 200);
     }
 
-    public function searchCatering(Request $request)
+    public function deleteMenu($id)
     {
-        $query = $request->input('query');
-
-        $merchants = Merchant::where('company_name', 'like', "%$query%")
-                            ->orWhere('address', 'like', "%$query%")
-                            ->get();
-
-        return response()->json($merchants, 200);
-    }
-}
-```
-
-#### MenuController
-
-```php
-// app/Http/Controllers/MenuController.php
-
-namespace App\Http\Controllers;
-
-use Illuminate\Http\Request;
-use App\Models\Menu;
-
-class MenuController extends Controller
-{
-    public function store(Request $request)
-    {
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'photo' => 'required|string',
-            'price' => 'required|numeric|min:0'
-        ]);
-
-        $menu = Auth::user()->merchant->menus()->create($validatedData);
-
-        return response()->json([
-            'message' => 'Menu berhasil ditambahkan',
-            'menu' => $menu
-        ], 201);
-    }
-
-    public function update(Request $request, $id)
-    {
-        $menu = Menu::findOrFail($id);
-
-        $validatedData = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'photo' => 'required|string',
-            'price' => 'required|numeric|min:0'
-        ]);
-
-        $menu->update($validatedData);
-
-        return response()->json([
-            'message' => 'Menu berhasil diperbarui',
-            'menu' => $menu
-        ], 200);
-    }
-
-    public function destroy($id)
-    {
-        $menu = Menu::findOrFail($id);
+        $menu = KelolaMenu::findOrFail($id);
         $menu->delete();
 
-        return response()->json([
-            'message' => 'Menu berhasil dihapus'
-        ], 200);
+        return response()->json(['message' => 'Menu berhasil dihapus'], 200);
+    }
+
+    // Konfirmasi pembayaran dan update status order
+    public function confirmPayment(Request $request, $id)
+    {
+        $request->validate([
+            'status_pembayaran' => 'required|in:Menunggu Konfirmasi,Pembayaran Diterima,Pembayaran Kadaluarsa',
+        ]);
+
+        $invoice = Invoice::findOrFail($id);
+        $invoice->update($request->only('status_pembayaran'));
+
+        $order = DaftarOrder::where('id_merchant', $invoice->id_merchant)
+                            ->where('id_customer', $invoice->id_customer)
+                            ->first();
+
+        if ($request->status_pembayaran == 'Menunggu Konfirmasi') {
+            $order->update(['status_order' => 'Pesanan pending']);
+        } elseif ($request->status_pembayaran == 'Pembayaran Diterima') {
+            $order->update(['status_order' => 'Pesanan disiapkan']);
+        } elseif ($request->status_pembayaran == 'Pembayaran Kadaluarsa') {
+            $order->update(['status_order' => 'Pesanan Gagal']);
+        }
+
+        return response()->json(['message' => 'Status pembayaran dan order berhasil diperbarui'], 200);
     }
 }
 ```
 
-#### OrderController
+**3.3. OrderController**
 
 ```php
-// app/Http/Controllers/OrderController.php
-
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
@@ -561,125 +727,84 @@ use App\Models\Order;
 
 class OrderController extends Controller
 {
-    public function store(Request $request)
+    // Menampilkan semua order berdasarkan user yang sedang login
+    public function orderDetails()
     {
-        $validatedData = $request->validate([
-            'menu_id' => 'required|exists:menus,id',
-            'quantity' => 'required|integer|min:1',
-            'delivery_date' => 'required|date',
+        $user = auth()->user();
+        if ($user->role == 'Customer') {
+            $orders = Order::where('id_customer', $user->customer->id)->get();
+        } else {
+            $orders = Order::where('id_merchant', $user->merchant->id)->get();
+        }
+
+        return response()->json(['orders' => $orders], 200);
+    }
+
+    // Membuat order baru
+    public function createOrder(Request $request)
+    {
+        $request->validate([
+            'id_merchant' => 'required|exists:merchants,id',
+            'id_menu' => 'required|exists:kelola_menu,id',
+            'jumlah_order' => 'required|integer',
+            'no_hp' => 'required|string',
+            'alamat_pengiriman' => 'required|string',
         ]);
 
-        $order = Auth::user()->customer->orders()->create([
-            'menu_id' => $validatedData['menu_id'],
-            'merchant_id' => $request->input('merchant_id'),
-            'quantity' => $validatedData['quantity'],
-            'delivery_date' => $validatedData['delivery_date'],
-            'status' => 'pending'
-        ]);
+        $order = new Order($request->only('id_merchant', 'id_menu', 'jumlah_order', 'no_hp', 'alamat_pengiriman'));
+        $order->customer_id = auth()->user()->customer->id;
+        $order->save();
 
-        return response()->json([
-            'message' => 'Order berhasil dibuat',
-            'order' => $order
-        ], 201);
+        return response()->json(['message' => 'Order berhasil dibuat', 'order' => $order], 201);
     }
 }
 ```
 
-### 4. Endpoint
+**4.4. InvoiceController**
 
 ```php
-// routes/api.php
 
-use App\Http\Controllers\AuthController;
+    // Mendapatkan semua invoice berdasarkan id_merchant
+    public function getInvoicesByMerchant($merchantId)
+    {
+        $invoices = Invoice::where('id_merchant', $merchantId)->get();
+        return response()->json($invoices, 200);
+    }
+}
+```
+
+### 4. Routes API
+
+**4.1. api.php**
+
+```php
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\MerchantController;
-use App\Http\Controllers\CustomerController;
-use App\Http\Controllers\MenuController;
 use App\Http\Controllers\OrderController;
+use App\Http\Controllers\InvoiceController;
 
-Route::post('register', [AuthController::class, 'register']);
-Route::post('login', [AuthController::class, 'login']);
-Route::post('logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+Route::post('register', [UserController::class, 'register']);
+Route::post('login', [UserController::class, 'login']);
 
-Route::middleware(['auth:sanctum', 'isMerchant'])->group(function () {
-    Route::put('merchant/profile', [MerchantController::class, 'updateProfile']);
-    Route::get('merchant/orders', [MerchantController::class, 'getOrders']);
-    Route::post('menu', [MenuController::class, 'store']);
-    Route::put('menu/{id}', [MenuController::class, 'update']);
-    Route::delete('menu/{id}', [MenuController::class, 'destroy']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('user-details', [UserController::class, 'userDetails']);
+    Route::put('update-user', [UserController::class, 'updateUser']);
+    Route::post('update-photo', [UserController::class, 'updatePhoto']);
+
+    Route::get('merchant-details', [MerchantController::class, 'merchantDetails']);
+    Route::post('menu', [MerchantController::class, 'storeMenu']);
+    Route::put('menu/{id}', [MerchantController::class, 'updateMenu']);
+    Route::delete('menu/{id}', [MerchantController::class, 'deleteMenu']);
+    Route::put('confirm-payment/{id}', [MerchantController::class, 'confirmPayment']);
+
+    Route::get('order-details', [OrderController::class, 'orderDetails']);
+    Route::post('create-order', [OrderController::class, 'createOrder']);
+
+    Route::post('upload-payment-proof/{id}', [InvoiceController::class, 'uploadPaymentProof']);
+
+    // Rute baru untuk mendapatkan semua invoice berdasarkan id_customer dan id_merchant
+    Route::get('invoices/customer/{customerId}', [InvoiceController::class, 'getInvoicesByCustomer']);
+    Route::get('invoices/merchant/{merchantId}', [InvoiceController::class, 'getInvoicesByMerchant']);
 });
-
-Route::middleware(['auth:sanctum', 'isCustomer'])->group(function () {
-    Route::put('customer/profile', [CustomerController::class, 'updateProfile']);
-    Route::get('search/catering', [CustomerController::class, 'searchCatering']);
-    Route::post('order', [OrderController::class, 'store']);
-});
 ```
-
-### 5. Middleware untuk tipe user
-
-Buat dua middleware baru: `IsMerchant` dan `IsCustomer`.
-
-```php
-// app/Http/Middleware/IsMerchant.php
-
-namespace App\Http\Middleware;
-
-use Closure;
-use Illuminate\Http\Request;
-
-class IsMerchant
-{
-    public function handle(Request $request, Closure $next)
-    {
-        if (auth()->user() && auth()->user()->type == 'merchant') {
-            return $next($request);
-        }
-
-        return response()->json(['message' => 'Akses ditolak'], 403);
-    }
-}
-```
-
-```php
-// app/Http/Middleware/IsCustomer.php
-
-namespace App\Http\Middleware;
-
-use Closure;
-use Illuminate\Http\Request;
-
-class IsCustomer
-{
-    public function handle(Request $request, Closure $next)
-    {
-        if (auth()->user() && auth()->user()->type == 'customer') {
-            return $next($request);
-        }
-
-        return response()->json(['message' => 'Akses ditolak'], 403);
-    }
-}
-```
-
-Registrasikan middleware di `app/Http/Kernel.php`.
-
-```php
-// app/Http/Kernel.php
-
-protected $routeMiddleware = [
-    // middleware lainnya
-    'isMerchant' => \App\Http\Middleware\IsMerchant::class,
-    'isCustomer' => \App\Http\Middleware\IsCustomer::class,
-];
-```
-
-### 6. Respon Sukses dan Error
-
-Setiap controller telah mencakup respon sukses dan error dalam bahasa Indonesia.
-
-### 7. Penjelasan
-
-Struktur backend ini memungkinkan adanya dua tipe pengguna: `Merchant` dan `Customer`. Mereka dapat mendaftar, login, dan mengelola profil masing-masing. Merchant dapat mengelola menu makanan dan melihat daftar order. Customer dapat mencari katering, membuat order, dan mendapatkan invoice.
-
-Skema endpoint yang jelas dan middleware memastikan bahwa hanya pengguna dengan hak akses tertentu yang dapat mengakses fitur-fitur tertentu, menjaga keamanan dan validitas sistem.
-

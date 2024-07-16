@@ -10,12 +10,16 @@ class Invoice extends Model
     use HasFactory;
 
     protected $fillable = [
-        'order_id',
-        'total_price',
+        'id_merchant', 'id_customer', 'jumlah_pembayaran', 'bukti_pembayaran', 'status_pembayaran',
     ];
 
-    public function order()
+    public function customer()
     {
-        return $this->belongsTo(Order::class);
+        return $this->belongsTo(Customer::class, 'id_customer');
+    }
+
+    public function merchant()
+    {
+        return $this->belongsTo(Merchant::class, 'id_merchant');
     }
 }

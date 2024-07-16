@@ -10,16 +10,22 @@ class Customer extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id', 'company_name', 'address', 'contact'
+        'id_customer', 'no_hp', 'nama_kantor', 'alamat', 'foto_profile',
     ];
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'id_customer');
     }
 
     public function orders()
     {
-        return $this->hasMany(Order::class);
+        return $this->hasMany(Order::class, 'id_customer');
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class, 'id_customer');
     }
 }
+

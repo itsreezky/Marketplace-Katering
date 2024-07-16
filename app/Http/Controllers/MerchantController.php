@@ -3,53 +3,100 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Merchant;
-use App\Models\Menu;
-use App\Models\Order;
-use Illuminate\Support\Facades\Auth;
+use App\Models\KelolaMenu;
+use App\Models\DaftarOrder;
+use App\Models\Invoice;
 
 class MerchantController extends Controller
 {
-    public function updateProfile(Request $request)
+    // Menampilkan data merchant yang sedang login
+    public function merchantDetails()
     {
-        $merchant = Merchant::where('user_id', Auth::id())->firstOrFail();
-        $merchant->update($request->all());
+        $user = auth()->user();
+        $merchant = $user->merchant;
 
-        return response()->json(['message' => 'Profile updated successfully', 'merchant' => $merchant], 200);
+        $menu = KelolaMenu::where('id_merchant', $merchant->id)->get();
+        $orders = DaftarOrder::where('id_merchant', $merchant->id)->get();
+        $invoices = Invoice::where('id_merchant', $merchant->id)->get();
+
+        return response()->json(['merchant' => $merchant, 'menu' => $menu, 'orders' => $orders, 'invoices' => $invoices], 200);
     }
 
-    public function addMenu(Request $request)
+    // CRUD Kelola Menu
+    public function storeMenu(Request $request)
     {
-        $merchant = Merchant::where('user_id', Auth::id())->firstOrFail();
+        $request->validate([
+            'nama_menu' => 'required|string|max:255',
+            'stok_menu' => 'required|integer',
+            'harga_menu' => 'required|numeric',
+            'deskripsi_menu' => 'required|string',
+            'foto_menu' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
 
-        $menu = $merchant->menus()->create($request->all());
+        $menu = new KelolaMenu($request->only('nama_menu', 'stok_menu', 'harga_menu', 'deskripsi_menu'));
+        if ($request->hasFile('foto_menu')) {
+            $path = $request->file('foto_menu')->store('public/menu_photos');
+            $menu->foto_menu = $path;
+        }
 
-        return response()->json(['message' => 'Menu added successfully', 'menu' => $menu], 201);
+        $menu->id_merchant = auth()->user()->merchant->id;
+        $menu->save();
+
+        return response()->json(['message' => 'Menu berhasil ditambahkan', 'menu' => $menu], 201);
     }
 
     public function updateMenu(Request $request, $id)
     {
-        $menu = Menu::findOrFail($id);
-        $menu->update($request->all());
+        $request->validate([
+            'nama_menu' => 'string|max:255',
+            'stok_menu' => 'integer',
+            'harga_menu' => 'numeric',
+            'deskripsi_menu' => 'string',
+            'foto_menu' => 'image|mimes:jpeg,png,jpg,gif,svg|max:2048',
+        ]);
 
-        return response()->json(['message' => 'Menu updated successfully', 'menu' => $menu], 200);
+        $menu = KelolaMenu::findOrFail($id);
+        $menu->update($request->only('nama_menu', 'stok_menu', 'harga_menu', 'deskripsi_menu'));
+
+        if ($request->hasFile('foto_menu')) {
+            $path = $request->file('foto_menu')->store('public/menu_photos');
+            $menu->update(['foto_menu' => $path]);
+        }
+
+        return response()->json(['message' => 'Menu berhasil diperbarui', 'menu' => $menu], 200);
     }
 
     public function deleteMenu($id)
     {
-        $menu = Menu::findOrFail($id);
+        $menu = KelolaMenu::findOrFail($id);
         $menu->delete();
 
-        return response()->json(['message' => 'Menu deleted successfully'], 200);
+        return response()->json(['message' => 'Menu berhasil dihapus'], 200);
     }
 
-    public function listOrders()
+    // Konfirmasi pembayaran dan update status order
+    public function confirmPayment(Request $request, $id)
     {
-        $merchant = Merchant::where('user_id', Auth::id())->firstOrFail();
-        $orders = Order::whereHas('menu', function($query) use ($merchant) {
-            $query->where('merchant_id', $merchant->id);
-        })->get();
+        $request->validate([
+            'status_pembayaran' => 'required|in:Menunggu Konfirmasi,Pembayaran Diterima,Pembayaran Kadaluarsa',
+        ]);
 
-        return response()->json(['orders' => $orders], 200);
+        $invoice = Invoice::findOrFail($id);
+        $invoice->update($request->only('status_pembayaran'));
+
+        $order = DaftarOrder::where('id_merchant', $invoice->id_merchant)
+                            ->where('id_customer', $invoice->id_customer)
+                            ->first();
+
+        if ($request->status_pembayaran == 'Menunggu Konfirmasi') {
+            $order->update(['status_order' => 'Pesanan pending']);
+        } elseif ($request->status_pembayaran == 'Pembayaran Diterima') {
+            $order->update(['status_order' => 'Pesanan disiapkan']);
+        } elseif ($request->status_pembayaran == 'Pembayaran Kadaluarsa') {
+            $order->update(['status_order' => 'Pesanan Gagal']);
+        }
+
+        return response()->json(['message' => 'Status pembayaran dan order berhasil diperbarui'], 200);
     }
 }
+

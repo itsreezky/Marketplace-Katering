@@ -5,12 +5,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Order extends Model
+class DaftarOrder extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'id_merchant', 'id_customer', 'id_menu', 'jumlah_order', 'no_hp', 'alamat_pengiriman',
+        'id_merchant', 'id_customer', 'id_menu', 'jumlah_order', 'no_hp', 'alamat_pengiriman', 'status_order',
     ];
 
     public function customer()

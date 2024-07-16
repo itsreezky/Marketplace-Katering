@@ -2,42 +2,27 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable;
 
     protected $fillable = [
-        'name',
-        'email',
-        'password',
-        'role',
+        'nama', 'email', 'password', 'role',
     ];
-
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-    ];
-
-    public function merchant()
-    {
-        return $this->hasOne(Merchant::class);
-    }
 
     public function customer()
     {
-        return $this->hasOne(Customer::class);
+        return $this->hasOne(Customer::class, 'id_customer');
     }
 
-    public function orders()
+    public function merchant()
     {
-        return $this->hasMany(Order::class, 'customer_id');
+        return $this->hasOne(Merchant::class, 'id_merchant');
     }
 }
+

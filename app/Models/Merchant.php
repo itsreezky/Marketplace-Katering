@@ -10,20 +10,27 @@ class Merchant extends Model
     use HasFactory;
 
     protected $fillable = [
-        'user_id',
-        'company_name',
-        'address',
-        'contact',
-        'description',
+        'id_merchant', 'nama_kantor', 'no_hp', 'alamat', 'foto_profile',
     ];
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'id_merchant');
     }
 
-    public function menus()
+    public function menu()
     {
-        return $this->hasMany(Menu::class);
+        return $this->hasMany(KelolaMenu::class, 'id_merchant');
+    }
+
+    public function orders()
+    {
+        return $this->hasMany(DaftarOrder::class, 'id_merchant');
+    }
+
+    public function invoices()
+    {
+        return $this->hasMany(Invoice::class, 'id_merchant');
     }
 }
+

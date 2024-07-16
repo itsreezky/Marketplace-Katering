@@ -27,6 +27,7 @@
         "react-router-dom": "^6.24.1",
         "slicknav": "^1.0.8",
         "sweetalert2": "^11.12.2",
+        "sweetalert2-react-content": "^5.0.7",
         "tailwindcss": "^3.4.4"
     }
 }

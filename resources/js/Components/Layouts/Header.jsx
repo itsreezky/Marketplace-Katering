@@ -1,26 +1,32 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faUser, faShop } from "@fortawesome/free-solid-svg-icons";
 import Swal from "sweetalert2";
-import { useUser } from "../../Controllers/UserContext";
+import { useAuth } from "../../Controllers/AuthContext";
 
 // Menu Data
 const merchantMenu = [
     { name: "Dashboard", link: "/" },
-    { name: "Profil Merchant", link: "/merchants/profile" },
-    { name: "Menu Makanan", link: "/merchants/menu" },
-    { name: "Pesanan", link: "#" },
-    { name: "Invoice", link: "#" },
+    { name: "Profile", link: "/merchants/profile" },
+    { name: "Menu Management", link: "/merchants/menu" },
+    { name: "Orders", link: "/merchants/orders" },
+    { name: "Invoices", link: "/merchants/invoices" },
 ];
 
 const customerMenu = [
     { name: "Dashboard", link: "/" },
-    { name: "Profil", link: "/customers/profile" },
-    { name: "Pencarian Katering", link: "#" },
-    { name: "Pembelian", link: "#" },
-    { name: "Invoice", link: "#" },
+    { name: "Profile", link: "/customers/profile" },
+    { name: "Search Catering", link: "/customers/search-catering" },
+    { name: "My Orders", link: "/customers/orders" },
+    { name: "Invoices", link: "/customers/invoices" },
 ];
 
-const guestMenu = [{ name: "Dashboard", link: "/" }];
+const guestMenu = [
+    { name: "Home", link: "/" },
+    { name: "About Us", link: "/about" },
+    { name: "Contact", link: "/contact" },
+];
 
 // Helper function to render menu items
 const renderMenu = (menu) =>
@@ -31,17 +37,10 @@ const renderMenu = (menu) =>
     ));
 
 const Header = () => {
-    const { user, setUser } = useUser();
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
     const [loginDropdownOpen, setLoginDropdownOpen] = useState(false);
     const [registerDropdownOpen, setRegisterDropdownOpen] = useState(false);
-    const navigate = useNavigate();
-
-    useEffect(() => {
-        const userData = localStorage.getItem("user");
-        if (userData) {
-            setUser(JSON.parse(userData));
-        }
-    }, [setUser]);
 
     const handleLogout = () => {
         Swal.fire({
@@ -53,22 +52,20 @@ const Header = () => {
             cancelButtonText: "Batal",
         }).then((result) => {
             if (result.isConfirmed) {
-                localStorage.removeItem("user");
-                localStorage.removeItem("token");
-                setUser(null);
-                navigate("/");
+                logout();
                 Swal.fire(
                     "Logged out!",
-                    "You have been logged out.",
+                    "Anda telah berhasil logout.",
                     "success"
                 );
+                navigate("/");
             }
         });
     };
 
     let menu;
     if (user) {
-        menu = user.type === "merchant" ? merchantMenu : customerMenu;
+        menu = user.role === "Merchant" ? merchantMenu : customerMenu;
     } else {
         menu = guestMenu;
     }
@@ -81,8 +78,7 @@ const Header = () => {
                         <div className="header__logo ms-3">
                             <span className="fs-7 fw-bold">
                                 MARKETPLACE KATERING
-                            </span>{" "}
-                            - <small>itsReezky</small>
+                            </span>
                         </div>
                     </div>
                     <div className="col-xl-6 col-lg-7">
@@ -97,9 +93,7 @@ const Header = () => {
                             <div className="header__right__auth">
                                 {user ? (
                                     <>
-                                        <span className="me-2">
-                                            {user.name} -
-                                        </span>
+                                        <span>{user.nama} -</span>
                                         <button
                                             className="btn btn-link"
                                             onClick={handleLogout}
@@ -111,7 +105,7 @@ const Header = () => {
                                     <div className="btn-group">
                                         <div className="dropdown me-3">
                                             <button
-                                                className="btn btn-outline-dark btn-sm dropdown-toggle"
+                                                className="btn btn-outline-dark btn-sm dropdown-toggle px-3 radius-30"
                                                 type="button"
                                                 onClick={() =>
                                                     setLoginDropdownOpen(
@@ -122,10 +116,10 @@ const Header = () => {
                                                 Masuk
                                             </button>
                                             {loginDropdownOpen && (
-                                                <ul className="dropdown-menu show">
-                                                    <li>
+                                                <ul className="dropdown-menu list-group show">
+                                                    <li className="list-group-item">
                                                         <Link
-                                                            className="dropdown-item"
+                                                            className="dropdown-item text-success"
                                                             to="/customers/login"
                                                             onClick={() =>
                                                                 setLoginDropdownOpen(
@@ -133,12 +127,16 @@ const Header = () => {
                                                                 )
                                                             }
                                                         >
+                                                            <FontAwesomeIcon
+                                                                className="ms-auto"
+                                                                icon={faUser}
+                                                            />{" "}
                                                             Pelanggan
                                                         </Link>
                                                     </li>
-                                                    <li>
+                                                    <li className="list-group-item">
                                                         <Link
-                                                            className="dropdown-item"
+                                                            className="dropdown-item text-danger"
                                                             to="/merchants/login"
                                                             onClick={() =>
                                                                 setLoginDropdownOpen(
@@ -146,6 +144,11 @@ const Header = () => {
                                                                 )
                                                             }
                                                         >
+                                                            {" "}
+                                                            <FontAwesomeIcon
+                                                                className="ms-auto"
+                                                                icon={faShop}
+                                                            />{" "}
                                                             Merchant
                                                         </Link>
                                                     </li>
@@ -154,7 +157,7 @@ const Header = () => {
                                         </div>
                                         <div className="dropdown">
                                             <button
-                                                className="btn btn-outline-success btn-sm dropdown-toggle"
+                                                className="btn btn-outline-primary btn-sm dropdown-toggle px-3 radius-30"
                                                 type="button"
                                                 onClick={() =>
                                                     setRegisterDropdownOpen(
@@ -165,10 +168,10 @@ const Header = () => {
                                                 Daftar
                                             </button>
                                             {registerDropdownOpen && (
-                                                <ul className="dropdown-menu show">
-                                                    <li>
+                                                <ul className="dropdown-menu list-group show">
+                                                    <li className="list-group-item">
                                                         <Link
-                                                            className="dropdown-item"
+                                                            className="dropdown-item text-success"
                                                             to="/customers/register"
                                                             onClick={() =>
                                                                 setRegisterDropdownOpen(
@@ -176,12 +179,16 @@ const Header = () => {
                                                                 )
                                                             }
                                                         >
+                                                            <FontAwesomeIcon
+                                                                className="ms-auto"
+                                                                icon={faUser}
+                                                            />{" "}
                                                             Pelanggan
                                                         </Link>
                                                     </li>
-                                                    <li>
+                                                    <li className="list-group-item">
                                                         <Link
-                                                            className="dropdown-item"
+                                                            className="dropdown-item text-danger"
                                                             to="/merchants/register"
                                                             onClick={() =>
                                                                 setRegisterDropdownOpen(
@@ -189,6 +196,10 @@ const Header = () => {
                                                                 )
                                                             }
                                                         >
+                                                            <FontAwesomeIcon
+                                                                className="ms-auto"
+                                                                icon={faShop}
+                                                            />{" "}
                                                             Merchant
                                                         </Link>
                                                     </li>

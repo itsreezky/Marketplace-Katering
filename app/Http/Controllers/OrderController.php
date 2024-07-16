@@ -4,60 +4,37 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Order;
-use Illuminate\Support\Facades\Auth;
 
 class OrderController extends Controller
 {
-    // Fungsi untuk membuat order baru
-    public function store(Request $request)
+    // Menampilkan semua order berdasarkan user yang sedang login
+    public function orderDetails()
     {
-        // Validasi data input
-        $validatedData = $request->validate([
-            'menu_id' => 'required|exists:menus,id',
-            'quantity' => 'required|integer|min:1',
-            'delivery_date' => 'required|date',
-        ]);
+        $user = auth()->user();
+        if ($user->role == 'Customer') {
+            $orders = Order::where('id_customer', $user->customer->id)->get();
+        } else {
+            $orders = Order::where('id_merchant', $user->merchant->id)->get();
+        }
 
-        // Membuat order baru untuk customer yang sedang login
-        $order = Auth::user()->customer->orders()->create($validatedData);
-
-        // Mengembalikan respons sukses
-        return response()->json([
-            'message' => 'Order berhasil dibuat',
-            'order' => $order
-        ], 201);
+        return response()->json(['orders' => $orders], 200);
     }
 
-    // Fungsi untuk memperbarui order yang sudah ada
-    public function update(Request $request, $id)
+    // Membuat order baru
+    public function createOrder(Request $request)
     {
-        $order = Order::findOrFail($id);
-
-        // Validasi data input
-        $validatedData = $request->validate([
-            'quantity' => 'required|integer|min:1',
-            'delivery_date' => 'required|date',
+        $request->validate([
+            'id_merchant' => 'required|exists:merchants,id',
+            'id_menu' => 'required|exists:kelola_menu,id',
+            'jumlah_order' => 'required|integer',
+            'no_hp' => 'required|string',
+            'alamat_pengiriman' => 'required|string',
         ]);
 
-        // Memperbarui order yang ada
-        $order->update($validatedData);
+        $order = new Order($request->only('id_merchant', 'id_menu', 'jumlah_order', 'no_hp', 'alamat_pengiriman'));
+        $order->customer_id = auth()->user()->customer->id;
+        $order->save();
 
-        // Mengembalikan respons sukses
-        return response()->json([
-            'message' => 'Order berhasil diperbarui',
-            'order' => $order
-        ], 200);
-    }
-
-    // Fungsi untuk menghapus order
-    public function destroy($id)
-    {
-        $order = Order::findOrFail($id);
-        $order->delete();
-
-        // Mengembalikan respons sukses
-        return response()->json([
-            'message' => 'Order berhasil dihapus'
-        ], 200);
+        return response()->json(['message' => 'Order berhasil dibuat', 'order' => $order], 201);
     }
 }

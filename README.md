@@ -1,6 +1,10 @@
-## Marketplace Katering
-
 **Marketplace Katering** adalah platform inovatif yang dirancang untuk menghubungkan penyedia layanan katering dengan perusahaan atau individu yang membutuhkan layanan katering berkualitas. Dibangun menggunakan teknologi terkini, Marketplace Katering memanfaatkan Laravel sebagai backend yang handal dan React sebagai frontend yang responsif, memberikan pengalaman pengguna yang mulus dan intuitif.
+
+- Author: Reezky
+- Email: its@reezky.cloud
+- Website: https://reezky.cloud/
+- Github: https://github.com/itsreezky
+- LinkedIn: https://www.linkedin.com/in/itsreezky/
 
 ### Fitur Utama
 

@@ -522,7 +522,7 @@ use Illuminate\Validation\ValidationException;
 class UserController extends Controller
 {
     // Registrasi user baru
-    public function register(Request $request)
+     public function register(Request $request)
     {
         $request->validate([
             'nama' => 'required|string|max:255',
@@ -535,24 +535,25 @@ class UserController extends Controller
             'foto_profile' => 'nullable|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        // Simpan foto profil jika ada
-        $path = $request->hasFile('foto_profile') ? $request->file('foto_profile')->store('public/profile_photos') : null;
+        $file = $request->file('foto_profile');
+        $filename = $request->role . '_' . $request->nama . '_' . $file->getClientOriginalName();
+        $file->storeAs('public/profile_photos', $filename);
 
         $user = User::create([
             'nama' => $request->nama,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $request->role,
-            'foto_profile' => $path,
+            'foto_profile' => $filename,
         ]);
 
-        if ($user->role == 'customer') {
+        if ($user->role == 'Customer') {
             Customer::create([
                 'id_customer' => $user->id,
                 'no_hp' => $request->no_hp,
                 'nama_kantor' => $request->nama_kantor,
                 'alamat' => $request->alamat,
-                'foto_profile' => $path,
+                'foto_profile' => $filename,
             ]);
         } else {
             Merchant::create([
@@ -560,13 +561,12 @@ class UserController extends Controller
                 'nama_kantor' => $request->nama_kantor,
                 'no_hp' => $request->no_hp,
                 'alamat' => $request->alamat,
-                'foto_profile' => $path,
+                'foto_profile' => $filename,
             ]);
         }
 
         return response()->json(['message' => 'Registrasi berhasil'], 201);
     }
-
 
     // Login user
     public function login(Request $request)
@@ -638,18 +638,34 @@ class UserController extends Controller
             'foto_profile' => 'required|image|mimes:jpeg,png,jpg,gif,svg|max:2048',
         ]);
 
-        $path = $request->file('foto_profile')->store('public/profile_photos');
-        $user->update(['foto_profile' => $path]);
+        //Cek Foto Lama
+        $fotoLama = null;
+        if ($user->role == 'Customer') {
+            $fotoLama = $user->customer->foto_profile;
+        } else {
+            $fotoLama = $user->merchant->foto_profile;
+        }
+
+        // Hapus Foto Lama Jika Ada
+        if ($fotoLama) {
+            Storage::delete('public/profile_photos/' . $fotoLama);
+        }
+
+        // Menambahkan Foto Baru
+        $file = $request->file('foto_profile');
+        $filename = $user->role . '_' . $user->nama . '_' . $file->getClientOriginalName();
+        $file->storeAs('public/profile_photos', $filename);
+
+        $user->update(['foto_profile' => $filename]);
 
         if ($user->role == 'Customer') {
-            $user->customer->update(['foto_profile' => $path]);
+            $user->customer->update(['foto_profile' => $filename]);
         } else {
-            $user->merchant->update(['foto_profile' => $path]);
+            $user->merchant->update(['foto_profile' => $filename]);
         }
 
         return response()->json(['message' => 'Foto berhasil diperbarui'], 200);
     }
-}
 
 ```
 

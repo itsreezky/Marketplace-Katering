@@ -29,6 +29,9 @@ function Login() {
                 title: "Berhasil",
                 text: "Anda berhasil login!",
             });
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
             navigate("/customers/profile");
         } catch (error) {
             MySwal.fire({

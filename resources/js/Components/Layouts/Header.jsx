@@ -1,7 +1,11 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faShop } from "@fortawesome/free-solid-svg-icons";
+import {
+    faUser,
+    faShop,
+    faRightFromBracket,
+} from "@fortawesome/free-solid-svg-icons";
 import Swal from "sweetalert2";
 import { useAuth } from "../../Controllers/AuthContext";
 
@@ -9,16 +13,16 @@ import { useAuth } from "../../Controllers/AuthContext";
 const merchantMenu = [
     { name: "Dashboard", link: "/" },
     { name: "Profile", link: "/merchants/profile" },
-    { name: "Menu Management", link: "/merchants/menu" },
-    { name: "Orders", link: "/merchants/orders" },
+    { name: "Kelola Menu", link: "/merchants/menu" },
+    { name: "Kelola Order", link: "/merchants/orders" },
     { name: "Invoices", link: "/merchants/invoices" },
 ];
 
 const customerMenu = [
     { name: "Dashboard", link: "/" },
     { name: "Profile", link: "/customers/profile" },
-    { name: "Search Catering", link: "/customers/search-catering" },
-    { name: "My Orders", link: "/customers/orders" },
+    { name: "Cari Catering", link: "/customers/search-catering" },
+    { name: "Orderan Saya", link: "/customers/orders" },
     { name: "Invoices", link: "/customers/invoices" },
 ];
 
@@ -93,12 +97,22 @@ const Header = () => {
                             <div className="header__right__auth">
                                 {user ? (
                                     <>
-                                        <span>{user.nama} -</span>
+                                        <span>
+                                            {user.nama}
+                                            <span className="ms-1 text-success">
+                                                ({user.role})
+                                            </span>
+                                        </span>
+                                        <b className="ms-2">-</b>
                                         <button
                                             className="btn btn-link"
                                             onClick={handleLogout}
                                         >
-                                            Logout
+                                            <small>Keluar</small>
+                                            <FontAwesomeIcon
+                                                className="ms-2"
+                                                icon={faRightFromBracket}
+                                            />
                                         </button>
                                     </>
                                 ) : (

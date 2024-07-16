@@ -79,7 +79,7 @@ export const DataProvider = ({ children }) => {
     const fetchInvoices = async () => {
         try {
             let response;
-            if (user.role === "customer") {
+            if (user.role === "Customer") {
                 response = await axios.get(
                     `${import.meta.env.VITE_API_BASE_URL}/invoices/customer/${
                         user.id
@@ -92,7 +92,7 @@ export const DataProvider = ({ children }) => {
                         },
                     }
                 );
-            } else if (user.role === "merchant") {
+            } else if (user.role === "Merchant") {
                 response = await axios.get(
                     `${import.meta.env.VITE_API_BASE_URL}/invoices/merchant/${
                         user.id
@@ -115,10 +115,10 @@ export const DataProvider = ({ children }) => {
     // Mendapatkan data berdasarkan peran pengguna
     useEffect(() => {
         if (user) {
-            if (user.role === "customer") {
+            if (user.role === "Customer") {
                 fetchOrders();
                 fetchInvoices();
-            } else if (user.role === "merchant") {
+            } else if (user.role === "Merchant") {
                 fetchMerchantDetails();
                 fetchMenus();
                 fetchOrders();
